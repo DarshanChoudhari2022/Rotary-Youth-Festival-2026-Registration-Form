@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rotary-youth-festival-2026-registra.vercel.app/sitemap.xml

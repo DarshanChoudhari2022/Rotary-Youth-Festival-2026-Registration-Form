@@ -7,6 +7,9 @@ const types = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
+  '.jpg': 'image/jpeg',
   '.png': 'image/png',
   '.webp': 'image/webp',
 };
@@ -33,18 +36,16 @@ http.createServer(async (req, res) => {
   }
 
   const file = pathname === '/' ? 'index.html' : pathname.slice(1);
-  const allowed = ['index.html', 'styles.css', 'registration.js'].includes(file)
+  const allowed = ['index.html', 'styles.css', 'registration.js', 'thank-you.html', 'thank-you.js', 'robots.txt', 'sitemap.xml'].includes(file)
     || /^policies\/[a-z]+\.html$/.test(file)
-    || /^assets\/[a-z]+\.(?:png|webp)$/.test(file);
-  if (!allowed) {
-    res.writeHead(404).end();
-    return;
-  }
+    || /^assets\/[a-z]+\.(?:png|webp|jpg)$/.test(file);
+  const showMissingPage = () => {
+    res.writeHead(404, { 'Content-Type': types['.html'] });
+    res.end(fs.readFileSync(path.join(__dirname, '404.html')));
+  };
+  if (!allowed) return showMissingPage();
   fs.readFile(path.join(__dirname, file), (error, content) => {
-    if (error) {
-      res.writeHead(404).end();
-      return;
-    }
+    if (error) return showMissingPage();
     res.setHeader('Content-Type', types[path.extname(file)]);
     res.end(content);
   });

@@ -12,19 +12,36 @@ function validate(body) {
 
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   let hasMinor = false;
+  const mobiles = new Set();
   const people = participants.map((person, index) => {
     const { first, last, email, mobile, dob, organization = "", city = "" } = person ?? {};
     const date = typeof dob === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dob)
       ? new Date(dob) : new Date(NaN);
-    if (![first, last].every(name => typeof name === 'string' && name.trim() && name.trim().length <= 100)
-        || typeof mobile !== 'string' || !/^[6-9]\d{9}$/.test(mobile)
-        || typeof organization !== 'string' || organization.length > 160
-        || typeof city !== 'string' || city.length > 100
-        || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+$/.test(email)
-        || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== dob
-        || dob < '0001-01-01' || dob > today) {
-      throw new Error(`Check the details for Participant ${index + 1}.`);
+    const position = index + 1;
+    const invalid = (field, message) => {
+      throw Object.assign(new Error(`Participant ${position}: ${message}`), { participant: position, field });
+    };
+    for (const [field, value, label] of [['first', first, 'first name'], ['last', last, 'last name']]) {
+      if (typeof value !== 'string' || !value.trim() || value.trim().length > 100) {
+        invalid(field, `Enter a ${label} of up to 100 characters.`);
+      }
     }
+    if (typeof mobile !== 'string' || !/^[6-9]\d{9}$/.test(mobile)) {
+      invalid('mobile', 'Enter a 10-digit Indian mobile number beginning with 6, 7, 8 or 9.');
+    }
+    if (mobiles.has(mobile)) invalid('mobile', 'Use a different mobile number for each participant.');
+    if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+$/.test(email)) {
+      invalid('email', 'Enter a valid email address.');
+    }
+    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== dob
+        || dob < '0001-01-01' || dob > today) {
+      invalid('dob', 'Enter a valid date of birth on or before today.');
+    }
+    if (typeof organization !== 'string' || organization.length > 160) {
+      invalid('organization', 'Use up to 160 characters for college or organization.');
+    }
+    if (typeof city !== 'string' || city.length > 100) invalid('city', 'Use up to 100 characters for city.');
+    mobiles.add(mobile);
     hasMinor ||= dob > FIRST_VISIT[visit].replace('2026', '2008');
     return { first: first.trim(), last: last.trim(), mobile: '+91' + mobile, email, dob, organization: organization.trim(), city: city.trim() };
   });
@@ -49,7 +66,8 @@ module.exports = async function register(req, res) {
   try {
     payload = validate(typeof req.body === 'string' ? JSON.parse(req.body) : req.body);
   } catch (error) {
-    return res.status(400).json({ error: error instanceof SyntaxError ? 'Invalid JSON.' : error.message });
+    return res.status(400).json({ error: error instanceof SyntaxError ? 'Invalid JSON.' : error.message,
+      participant: error.participant, field: error.field });
   }
 
   const { SUPABASE_URL, SUPABASE_SECRET_KEY } = process.env;
@@ -65,6 +83,13 @@ module.exports = async function register(req, res) {
       signal: AbortSignal.timeout(10000),
     });
     if (result.status === 409) {
+      const conflict = await result.json();
+      const participant = Number(conflict.details);
+      if (conflict.message === 'Mobile already registered'
+          && Number.isInteger(participant) && participant >= 1 && participant <= payload.p_participants.length) {
+        return res.status(409).json({ participant, field: 'mobile', code: 'MOBILE_ALREADY_REGISTERED',
+          error: `Participant ${participant}: this mobile number is already registered. Enter a different number or contact support at 9011023332.` });
+      }
       return res.status(409).json({ error: 'This submission reference has already been used. Change your booking details and review again.' });
     }
     if (!result.ok) throw new Error('Supabase rejected the request');

@@ -62,11 +62,17 @@ function updateBooking() {
   const visit = visits[form.elements.visit.value];
   const quantity = cards.children.length;
   let hasMinor = false;
+  const mobiles = new Set();
   for (const card of cards.children) {
     const inputs = [...card.querySelectorAll('input')];
     for (const input of inputs.filter(input => ['first', 'last'].includes(input.name))) {
       input.setCustomValidity(input.value && !input.value.trim() ? 'Enter a name.' : '');
     }
+    const mobile = card.querySelector('[name=mobile]');
+    const duplicate = mobile.value && mobiles.has(mobile.value);
+    mobile.setCustomValidity(duplicate ? 'Use a different number for each participant.'
+      : (mobile.dataset.registered === mobile.value ? 'This number is already registered. Use a different number or call 9011023332.' : ''));
+    if (mobile.value) mobiles.add(mobile.value);
     const dob = card.querySelector('[name=dob]');
     const days = visit?.days ?? [21];
     if (dob.value && dob.validity.valid) {
@@ -176,11 +182,33 @@ save.addEventListener('click', async () => {
     });
     const result = await response.json();
     if (!response.ok) {
+      const card = cards.children[result.participant - 1];
+      const field = card && [...card.querySelectorAll('input')].find(input => input.name === result.field);
+      if (field) {
+        if (result.code === 'MOBILE_ALREADY_REGISTERED') {
+          field.dataset.registered = field.value;
+          updateBooking();
+        } else {
+          field.setCustomValidity(result.error);
+          field.addEventListener('input', () => field.setCustomValidity(''), { once: true, capture: true });
+        }
+        review.close();
+        card.open = true;
+        field.focus();
+        field.reportValidity();
+        return;
+      }
       saveStatus.textContent = result.error || 'Registration could not be saved. Please retry.';
       return;
     }
     savedBooking = result;
     renderSaveStatus();
+    try {
+      sessionStorage.setItem('festival-registration', JSON.stringify(result));
+      window.location.assign('/thank-you.html');
+    } catch {
+      // Keep the registration ID visible if session storage is unavailable.
+    }
   } catch {
     saveStatus.textContent = 'Registration could not be verified. Please retry.';
   } finally {
