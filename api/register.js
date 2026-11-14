@@ -13,18 +13,20 @@ function validate(body) {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   let hasMinor = false;
   const people = participants.map((person, index) => {
-    const { first, last, email, mobile, dob } = person ?? {};
+    const { first, last, email, mobile, dob, organization = "", city = "" } = person ?? {};
     const date = typeof dob === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dob)
       ? new Date(dob) : new Date(NaN);
     if (![first, last].every(name => typeof name === 'string' && name.trim() && name.trim().length <= 100)
-        || typeof mobile !== 'string' || !/^\d{10}$/.test(mobile)
+        || typeof mobile !== 'string' || !/^[6-9]\d{9}$/.test(mobile)
+        || typeof organization !== 'string' || organization.length > 160
+        || typeof city !== 'string' || city.length > 100
         || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+$/.test(email)
         || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== dob
         || dob < '0001-01-01' || dob > today) {
       throw new Error(`Check the details for Participant ${index + 1}.`);
     }
     hasMinor ||= dob > FIRST_VISIT[visit].replace('2026', '2008');
-    return { first: first.trim(), last: last.trim(), mobile: '+91' + mobile, email, dob };
+    return { first: first.trim(), last: last.trim(), mobile: '+91' + mobile, email, dob, organization: organization.trim(), city: city.trim() };
   });
 
   if (hasMinor && guardianConsent !== true) {

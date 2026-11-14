@@ -8,6 +8,7 @@ const types = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.png': 'image/png',
+  '.webp': 'image/webp',
 };
 
 http.createServer(async (req, res) => {
@@ -34,7 +35,7 @@ http.createServer(async (req, res) => {
   const file = pathname === '/' ? 'index.html' : pathname.slice(1);
   const allowed = ['index.html', 'styles.css', 'registration.js'].includes(file)
     || /^policies\/[a-z]+\.html$/.test(file)
-    || /^assets\/[a-z]+\.png$/.test(file);
+    || /^assets\/[a-z]+\.(?:png|webp)$/.test(file);
   if (!allowed) {
     res.writeHead(404).end();
     return;

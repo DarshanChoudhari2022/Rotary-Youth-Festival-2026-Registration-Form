@@ -93,7 +93,7 @@ function updateBooking() {
   document.querySelector('#breakdown').textContent = visit
     ? `${participants} · ${currency.format(visit.price)} × ${quantity} = ${total}` : participants;
   pay.disabled = !visit;
-  pay.textContent = visit ? `PAY ${total}` : 'Select a visit';
+  pay.textContent = visit ? `Review · ${total}` : 'Select a visit';
 }
 
 for (const link of document.querySelectorAll('[data-policy]')) {
@@ -139,7 +139,7 @@ form.addEventListener('submit', event => {
     fields.first = fields.first.trim();
     fields.last = fields.last.trim();
     participants.push(fields);
-    item.textContent = `${fields.first.trim()} ${fields.last.trim()} · +91 ${fields.mobile} · ${fields.email} · ${fields.dob}`;
+    item.textContent = `${fields.first.trim()} ${fields.last.trim()} · +91 ${fields.mobile} · ${fields.email} · ${fields.dob} · ${fields.organization || "—"} · ${fields.city || "—"}`;
     list.append(item);
   }
   const booking = { visit: form.elements.visit.value, participants,

@@ -12,3 +12,9 @@ The form sends reviewed bookings to `POST /api/register` on Vercel. The endpoint
 ## Verify a deployment
 
 Submit a booking with sample details, choose **Save pending registration**, and copy the `RYF26-XXXXXXXX` ID shown in the review dialog. In Supabase Table Editor, verify that `registrations` has a matching pending row and that `registration_participants` contains one row per participant for that ID. Verify that `amount_paise` is 20000 per participant for either single day or 40000 per participant for both days.
+
+## Participant context update
+
+Run migration 202611140002_participant_context.sql after the initial migration. It adds optional organization and city fields and preserves retries for older payloads. This migration was applied to the connected project during development.
+
+Run the local server with node dev-server.js. It reads credentials from the Git-ignored .env.local file.
