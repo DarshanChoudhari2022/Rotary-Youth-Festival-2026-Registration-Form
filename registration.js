@@ -1,3 +1,11 @@
+// Preserve section links while opening the homepage at its top.
+if (!window.location.hash) {
+  history.scrollRestoration = 'manual';
+  window.addEventListener('pageshow', () => {
+    if (!window.location.hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  });
+}
+
 const form = document.querySelector('#booking');
 const cards = document.querySelector('#participants');
 const template = document.querySelector('#participant-template');
