@@ -11,6 +11,7 @@
 <header class="hero">
   <nav class="wrap"><span>Rotary &amp; Rotaract District 3131</span><a href="#registration">Book tickets ↓</a></nav>
   <div class="wrap introduction">
+    <img class="festival-image" src="assets/festival.png" alt="Illustration of young people exploring an outdoor innovation festival" width="1672" height="941">
     <p class="eyebrow">Rotary &amp; Rotaract Youth Festival 2026</p>
     <h1>Naya Bharat <em>2047</em></h1>
     <p class="location">21–22 November 2026 · Fergusson College, Pune</p>
@@ -21,6 +22,11 @@
       <p>Visit the job fair, meet startup founders and entrepreneurs, and explore art, craft, music, drama and the Indian Food Festival.</p>
       <p>The event brief lists Shri Devendra Fadnavis and Shri Murlidhar Mohol as special guests. Guest appearances and programme details are subject to change.</p>
     </details>
+    <div class="experience-gallery">
+      <figure><img src="assets/technology.png" alt="Illustration of a student technology expo" loading="lazy" width="1672" height="941"><figcaption>Technology &amp; innovation</figcaption></figure>
+      <figure><img src="assets/careers.png" alt="Illustration of a career fair" loading="lazy" width="1672" height="941"><figcaption>Careers &amp; entrepreneurship</figcaption></figure>
+      <figure><img src="assets/culture.png" alt="Illustration of a cultural festival" loading="lazy" width="1672" height="941"><figcaption>Arts &amp; culture</figcaption></figure>
+    </div>
   </div>
 </header>
 <main class="wrap" id="registration">
@@ -82,11 +88,11 @@
   <details class="participant">
     <summary><span class="participant-title"></span><small class="participant-status"></small></summary>
     <div class="fields">
-      <label>First name <input name="first" maxlength="100" placeholder="Enter first name" required></label>
-      <label>Last name <input name="last" maxlength="100" placeholder="Enter last name" required></label>
+      <label>First name <input name="first" autocomplete="given-name" maxlength="100" placeholder="Enter first name" required></label>
+      <label>Last name <input name="last" autocomplete="family-name" maxlength="100" placeholder="Enter last name" required></label>
       <label>Mobile number <span class="phone"><span aria-hidden="true">+91</span><input name="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number" aria-label="Indian mobile number, 10 digits" required></span></label>
-      <label>Email ID <input name="email" type="email" maxlength="254" placeholder="Enter email address" required></label>
-      <label>Date of birth <input name="dob" type="date" required></label>
+      <label>Email ID <input name="email" autocomplete="email" type="email" maxlength="254" placeholder="Enter email address" required></label>
+      <label>Date of birth <input name="dob" min="0001-01-01" autocomplete="bday" type="date" required></label>
       <p class="eligibility muted" aria-live="polite"></p>
     </div>
   </details>

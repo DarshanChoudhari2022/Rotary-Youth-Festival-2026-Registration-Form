@@ -34,6 +34,25 @@ function addParticipant() {
   const card = template.content.firstElementChild.cloneNode(true);
   card.querySelector('.participant-title').textContent = `Participant ${cards.children.length + 1}`;
   card.querySelector('[name=dob]').max = today;
+  for (const input of card.querySelectorAll('input')) {
+    const error = document.createElement('span');
+    error.className = 'field-error';
+    error.id = `error-${cards.children.length + 1}-${input.name}`;
+    input.setAttribute('aria-describedby', error.id);
+    input.closest('label').append(error);
+    const showError = () => {
+      error.textContent = input.validationMessage;
+      input.setAttribute('aria-invalid', String(!input.validity.valid));
+    };
+    input.addEventListener('blur', showError);
+    input.addEventListener('invalid', showError);
+    input.addEventListener('input', () => {
+      if (input.getAttribute('aria-invalid') === 'true') {
+        updateBooking();
+        showError();
+      }
+    });
+  }
   card.open = true;
   for (const existing of cards.children) existing.open = false;
   cards.append(card);
