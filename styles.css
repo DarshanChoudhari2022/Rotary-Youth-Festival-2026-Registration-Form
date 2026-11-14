@@ -39,7 +39,7 @@ input[type=checkbox],input[type=radio]{flex:none;width:18px;height:18px;margin:2
 .summary-inner{display:flex;justify-content:space-between;align-items:center;gap:15px;max-width:900px}.summary p{margin:5px 0 0;font-size:.82rem;color:var(--muted)}.summary strong{font-size:.87rem}
 dialog{width:min(580px,calc(100% - 32px));border:1px solid var(--line);border-radius:12px;padding:28px;color:#1c3042;max-height:85vh;overflow:auto}dialog::backdrop{background:#122d4699}dialog li{overflow-wrap:anywhere;line-height:1.8;margin-bottom:12px}dialog form{margin-top:12px}dialog form button{background:#edf2f6;color:#1c3042}#save-status{overflow-wrap:anywhere}
 footer{border-top:1px solid var(--line);margin-top:32px;padding-top:24px;font-size:.8rem;color:var(--muted)}footer nav{display:flex;flex-wrap:wrap;gap:12px 20px}
-.policy{width:min(75ch,calc(100% - 40px));margin:40px auto;line-height:1.7}.policy article{white-space:pre-line}.policy h1{font-size:2.3rem}.policy h2{font-size:1.3rem;margin-top:30px}
+
 :focus-visible{outline:3px solid #a94b10;outline-offset:4px}
 @media(min-width:800px){a,button{transition:background .15s}}
 @media(max-width:850px){.event-card{grid-template-columns:140px 1fr}.event-benefits{grid-column:1/-1}.event-layout{grid-template-columns:1fr}.benefit-grid{grid-template-columns:1fr 1fr}}
@@ -103,4 +103,61 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding-top:24px;font-si
   .event-tabs { gap: 18px; }
   .brandline { font-size: 12px; }
   .card-actions { flex-wrap: wrap; }
+}
+
+/* Shared editorial typography and policy layout. */
+body { font-size: 15px; line-height: 1.6; }
+h1, h2, h3 { line-height: 1.3; }
+h2 { font-size: 24px; letter-spacing: -.02em; }
+h3, legend { font-size: 16px; }
+p { margin-bottom: 12px; line-height: 1.65; }
+button, input { font-family: inherit; }
+.fields input { font-size: 16px !important; }
+.policy-page { padding-bottom: 0; background: #fff; color: #273442; }
+.policy-header {
+  max-width: 1120px; margin: auto; padding: 20px 24px;
+  display: flex; justify-content: space-between; gap: 20px;
+  border-bottom: 1px solid #e2e7ec; font-size: 14px;
+}
+.policy-header a:first-child { font-size: 17px; font-weight: 700; text-decoration: none; }
+.policy {
+  width: min(760px, calc(100% - 40px)); margin: 36px auto 48px;
+  font-size: 15px; line-height: 1.65;
+}
+.policy article { white-space: normal; }
+.policy h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; margin: 0 0 16px; }
+.policy h2 { font-size: 18px; font-weight: 600; letter-spacing: 0; margin: 26px 0 8px; }
+.policy h3 { font-size: 15px; font-weight: 600; margin: 18px 0 6px; }
+.policy p { margin: 0 0 12px; }
+.policy ul { margin: 8px 0 14px; padding-left: 22px; }
+.policy li { padding-left: 3px; margin: 3px 0; }
+.policy strong { font-weight: 600; }
+.site-footer {
+  border-top: 1px solid #dce3ea; margin-top: 40px;
+  padding: 28px 0 18px; color: #526170; font-size: 13px; line-height: 1.6;
+}
+.footer-grid {
+  display: grid; grid-template-columns: 1.1fr 1.3fr 1fr; gap: 28px;
+  max-width: 1120px; margin: auto;
+}
+.footer-event strong { font-size: 17px; color: #24384b; }
+.site-footer h2 { font-size: 13px; line-height: 1.5; font-weight: 700; letter-spacing: 0; color: #24384b; margin: 0 0 10px; }
+.site-footer p { margin: 8px 0; font-size: 13px; line-height: 1.65; }
+.site-footer nav { display: block; }
+.site-footer nav a { display: block; width: fit-content; margin-bottom: 7px; text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
+.footer-bottom { max-width: 1120px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid #e2e7ec; font-size: 12px; line-height: 1.65; }
+.policy-page .site-footer { background: #f6f8fa; padding-inline: 24px; }
+@media (max-width: 680px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .footer-event { grid-column: 1 / -1; }
+  .policy { margin-top: 26px; }
+  .policy h1 { font-size: 25px; }
+  .policy h2 { font-size: 18px; margin-top: 22px; }
+  .policy-header { padding: 16px 20px; font-size: 12px; }
+  .policy-header a:first-child { font-size: 15px; }
+}
+@media (max-width: 380px) {
+  .footer-grid { grid-template-columns: 1fr; }
+  .footer-event { grid-column: auto; }
 }
