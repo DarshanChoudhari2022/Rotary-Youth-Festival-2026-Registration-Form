@@ -8,27 +8,32 @@
 <script src="registration.js" defer></script>
 </head>
 <body>
-<header class="hero">
-  <nav class="wrap"><span>Rotary &amp; Rotaract District 3131</span><a href="#registration">Book tickets ↓</a></nav>
-  <div class="wrap introduction">
-    <img class="festival-image" src="assets/festival.png" alt="Illustration of young people exploring an outdoor innovation festival" width="1672" height="941">
-    <p class="eyebrow">Rotary &amp; Rotaract Youth Festival 2026</p>
-    <h1>Naya Bharat <em>2047</em></h1>
-    <p class="location">21–22 November 2026 · Fergusson College, Pune</p>
-    <p class="description">Two days of discovery for students, families and young entrepreneurs. Explore AI, drones and aviation, meet employers and startups, and experience Indian arts, music and food.</p>
-    <p class="partner">In association with Deccan Education Society</p>
-    <details class="programme"><summary>Explore the programme</summary>
-      <p>The Experience Zone brings together AI, agri-tech, 3D printing, drones and aviation, medical and pharma innovation, textiles, and showcases related to DRDO, NDRF and CRPF.</p>
-      <p>Visit the job fair, meet startup founders and entrepreneurs, and explore art, craft, music, drama and the Indian Food Festival.</p>
-      <p>The event brief lists Shri Devendra Fadnavis and Shri Murlidhar Mohol as special guests. Guest appearances and programme details are subject to change.</p>
-    </details>
-    <div class="experience-gallery">
-      <figure><img src="assets/technology.png" alt="Illustration of a student technology expo" loading="lazy" width="1672" height="941"><figcaption>Technology &amp; innovation</figcaption></figure>
-      <figure><img src="assets/careers.png" alt="Illustration of a career fair" loading="lazy" width="1672" height="941"><figcaption>Careers &amp; entrepreneurship</figcaption></figure>
-      <figure><img src="assets/culture.png" alt="Illustration of a cultural festival" loading="lazy" width="1672" height="941"><figcaption>Arts &amp; culture</figcaption></figure>
+<header class="event-header">
+  <div class="wrap brandline">Rotary &amp; Rotaract District 3131 <a href="#registration">Register for the festival</a></div>
+  <div class="countdown-banner">
+    <div class="countdown-content"><p>Rotary &amp; Rotaract Youth Festival 2026</p><h1>Naya Bharat 2047</h1>
+    <div id="countdown" aria-label="Countdown to 21 November 2026"></div>
+    <small>Until 21 November · Pune time</small></div>
+  </div>
+  <div class="wrap event-card">
+    <a class="event-art" href="assets/poster.png" target="_blank"><img src="assets/deck.png" alt="Official Rotary Rotaract Youth Festival artwork"></a>
+    <div class="event-facts">
+      <dl><div><dt>Location</dt><dd>Fergusson College, Pune</dd></div><div><dt>Dates</dt><dd>21 &amp; 22 November 2026</dd></div><div><dt>Entry</dt><dd>₹200 / person / day</dd></div></dl>
+      <a class="register-link" href="#registration">REGISTER NOW</a>
     </div>
+    <div class="event-benefits"><strong>Two-day pass · ₹400</strong><p>Explore innovation, careers, arts and culture.</p><p>Food coupon eligibility for participants below 16.</p></div>
   </div>
 </header>
+<div class="wrap event-layout">
+  <section class="event-information">
+    <nav class="event-tabs" aria-label="Festival information"><button type="button" data-section="details" aria-pressed="true">Details</button><button type="button" data-section="experience" aria-pressed="false">Experience zone</button><button type="button" data-section="speakers" aria-pressed="false">Speakers</button><button type="button" data-section="gallery" aria-pressed="false">Gallery</button></nav>
+    <div id="details" class="event-section"><h2>Experience the India of tomorrow</h2><p>Rotary &amp; Rotaract District 3131 and Deccan Education Society bring young people together for two days of discovery at Fergusson College, Pune.</p><p>Explore the possibilities of a developed, self-reliant India through industry, education, technology, entrepreneurship and culture.</p><p>Art, craft, music, drama, a job fair, startups and the Indian Food Festival bring the programme to life.</p><p lang="mr">विकसित आणि आत्मनिर्भर नव्या भारताची प्रत्यक्ष ओळख करून देणारा युवा महोत्सव — नया भारत २०४७.</p></div>
+    <div id="experience" class="event-section" hidden><h2>Experience zone</h2><p>DRDO · NDRF · CRPF · Artificial intelligence · Agri-tech · 3D printing · Aircraft · Drones · Medical technology · Pharma · Textiles</p><p>Discover emerging industries, meet professionals and explore career and entrepreneurship opportunities.</p></div>
+    <div id="speakers" class="event-section" hidden><h2>Featured speakers</h2><ul><li>Shri Devendra Fadnavis</li><li>Shri Murlidhar Mohol</li><li>Shri Vishwas Nangare Patil</li><li>Shri Tukaram Mundhe</li></ul><p>Listed in the organisers’ event announcement. Guest appearances and programme details are subject to change.</p></div>
+    <div id="gallery" class="event-section" hidden><h2>Festival artwork &amp; proposed experiences</h2><div class="official-gallery"><a href="assets/poster.png" target="_blank"><img src="assets/poster.png" alt="Official festival brochure cover"></a><a href="assets/concept.png" target="_blank"><img src="assets/concept.png" alt="Proposed event concepts from the sponsorship deck"></a></div></div>
+  </section>
+  <aside class="contact-card"><h3>Event assistance</h3><div><strong>Dr. Santosh More</strong><p>District Co-Director</p><a href="tel:+919011023332">9011023332</a><hr><p>For registration, participation and event enquiries.</p></div></aside>
+</div>
 <main class="wrap" id="registration">
   <h2>Book your tickets</h2>
   <p class="muted">You can save a pending registration. Payment is currently unavailable.</p>
