@@ -7,6 +7,12 @@ const plus = document.querySelector('#plus');
 const minus = document.querySelector('#minus');
 const pay = document.querySelector('#pay');
 const review = document.querySelector('#review');
+const save = document.querySelector('#save-booking');
+const saveStatus = document.querySelector('#save-status');
+let draftKey = '';
+let draftId;
+let reviewedBooking;
+let savedBooking;
 const currency = new Intl.NumberFormat('en-IN', {
   style: 'currency', currency: 'INR', maximumFractionDigits: 0,
 });
@@ -107,13 +113,64 @@ form.addEventListener('submit', event => {
     `${visit.label} · ${cards.children.length} ticket(s) · ${currency.format(visit.price * cards.children.length)}`;
   const list = document.querySelector('#review-participants');
   list.replaceChildren();
+  const participants = [];
   for (const card of cards.children) {
     const item = document.createElement('li');
     const fields = Object.fromEntries([...card.querySelectorAll('input')].map(input => [input.name, input.value]));
+    fields.first = fields.first.trim();
+    fields.last = fields.last.trim();
+    participants.push(fields);
     item.textContent = `${fields.first.trim()} ${fields.last.trim()} · +91 ${fields.mobile} · ${fields.email} · ${fields.dob}`;
     list.append(item);
   }
+  const booking = { visit: form.elements.visit.value, participants,
+    guardianConsent: guardian.checked,
+    declarations: { accuracy: true, policies: true, refund: true, food: true } };
+  const key = JSON.stringify(booking);
+  if (key !== draftKey) {
+    draftKey = key;
+    draftId = crypto.randomUUID();
+    savedBooking = null;
+  }
+  reviewedBooking = { ...booking, requestId: draftId };
+  renderSaveStatus();
   review.showModal();
+});
+
+function renderSaveStatus() {
+  saveStatus.textContent = savedBooking
+    ? `Registration ${savedBooking.registration_id} · ${currency.format(savedBooking.amount_paise / 100)} · Payment pending`
+    : '';
+  save.disabled = Boolean(savedBooking);
+}
+
+save.addEventListener('click', async () => {
+  save.disabled = true;
+  saveStatus.textContent = 'Saving registration…';
+  const close = review.querySelector('[type=submit]');
+  close.disabled = true;
+  try {
+    const response = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reviewedBooking),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      saveStatus.textContent = result.error || 'Registration could not be saved. Please retry.';
+      return;
+    }
+    savedBooking = result;
+    renderSaveStatus();
+  } catch {
+    saveStatus.textContent = 'Registration could not be verified. Please retry.';
+  } finally {
+    save.disabled = Boolean(savedBooking);
+    close.disabled = false;
+  }
+});
+review.addEventListener('cancel', event => {
+  if (review.querySelector('[type=submit]').disabled) event.preventDefault();
 });
 
 addParticipant();
