@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 * { box-sizing: border-box; }
 :root {
@@ -107,4 +106,106 @@ dialog form button { background: #eef2ed; color: #234d41; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+}
+
+/* Restrained event registration layout */
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #202b37;
+  background: #f4f5f7;
+  --navy: #174579;
+  --line: #dce1e7;
+  --muted: #586574;
+}
+.hero {
+  background: #fff;
+  color: #202b37;
+  border-top: 5px solid #174579;
+  border-bottom: 1px solid var(--line);
+}
+.hero nav {
+  color: #174579;
+  border-bottom: 1px solid var(--line);
+  padding-block: 1.2rem;
+}
+.hero nav span { font-size: .95rem; }
+.hero a { color: #174579; border: 0; font-weight: 600; }
+.introduction { padding-block: 2.6rem 2rem; }
+.eyebrow {
+  color: #596776;
+  letter-spacing: .035em;
+  text-transform: none;
+  font-size: 1rem;
+  margin: 0 0 .8rem;
+}
+h1 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -.035em;
+  margin: 0 0 1rem;
+}
+h1 em { color: #174579; }
+.location { font-size: .95rem; margin-block: .5rem; }
+.description { color: #52606e; font-size: .94rem; max-width: 76ch; line-height: 1.65; }
+.partner { color: #667381; margin-top: 1rem; }
+.programme { color: #52606e; margin-top: 1.2rem; line-height: 1.6; }
+.programme summary { color: #174579; }
+main.wrap { padding-top: 2rem; }
+h2, h3, legend { font-family: Arial, Helvetica, sans-serif; letter-spacing: -.02em; }
+h2 { font-size: 1.6rem; }
+h3, legend { font-size: 1rem; }
+.panel {
+  border-radius: 5px;
+  box-shadow: none;
+  padding: 1.6rem;
+}
+.options label {
+  border-radius: 4px;
+  padding: 1rem;
+  background: #fff;
+}
+.options label:hover { background: #f8fafd; border-color: #859ab2; }
+.options label:has(:checked) {
+  background: #f0f5fb;
+  border-color: #174579;
+  box-shadow: inset 0 0 0 1px #174579;
+}
+.options strong { color: #202b37; font-size: 1rem; margin-top: .5rem; }
+.counter { border-radius: 4px; background: #f5f6f8; }
+button { border-radius: 4px; }
+button:hover:enabled { background: #123b69; box-shadow: none; }
+.counter button { border-radius: 3px; color: #174579; }
+input { accent-color: #174579; }
+input:not([type=checkbox]):not([type=radio]) {
+  border-radius: 4px;
+  background: #fff;
+  border-color: #bfc9d3;
+  min-height: 44px;
+}
+.participant { border-radius: 4px; }
+.participant summary { background: #f5f6f8; }
+.participant-status { color: #276747; }
+.check { color: #475463; }
+a { color: #174579; }
+.summary {
+  border-color: #dce1e7;
+  background: #fff;
+  color: #202b37;
+  backdrop-filter: none;
+  box-shadow: 0 -2px 8px #00000008;
+}
+.summary p { color: #586574; }
+.summary button { min-width: 160px; min-height: 48px; }
+dialog { border-radius: 6px; box-shadow: 0 12px 40px #13243d25; }
+dialog::backdrop { background: #15253680; backdrop-filter: none; }
+dialog form button { color: #33485e; background: #edf0f4; }
+:focus-visible { outline-color: #174579; }
+@media (max-width: 640px) {
+  .hero nav span { font-size: .78rem; }
+  .introduction { padding-block: 1.8rem 1.5rem; }
+  .location { max-width: none; font-size: .88rem; }
+  .panel { padding: 1.15rem; }
+  .options strong { margin-top: 0; }
+  .summary button { min-width: 120px; }
 }
