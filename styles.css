@@ -164,6 +164,7 @@ button, input { font-family: inherit; }
 }
 
 .event-page { padding-bottom: 0; }
+section.content-section .partner-art { display: none; }
 .page-navigation { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
 .page-navigation a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; border-bottom: 2px solid transparent; font-size: 14px; font-weight: 600; }
 .page-navigation a[aria-current="page"] { border-bottom-color: #c80f50; }
