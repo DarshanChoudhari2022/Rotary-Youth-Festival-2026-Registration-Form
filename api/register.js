@@ -95,7 +95,9 @@ module.exports = async function register(req, res) {
     if (!result.ok) throw new Error('Supabase rejected the request');
     const [booking] = await result.json();
     if (!booking?.registration_id) throw new Error('Supabase returned no registration');
-    return res.status(200).json(booking);
+    let access;
+    if (process.env.TICKET_SIGNING_SECRET?.length >= 64) access = require('../lib/tickets').access(booking.registration_id);
+    return res.status(200).json({ ...booking, access });
   } catch {
     return res.status(503).json({ error: 'We could not verify that your booking was saved. Please retry.' });
   }

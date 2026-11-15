@@ -16,7 +16,8 @@ const types = {
 
 http.createServer(async (req, res) => {
   const pathname = new URL(req.url, 'http://localhost').pathname;
-  if (pathname === '/api/register') {
+  const handlers = { '/api/register': register, '/api/booking': require('./api/booking'), '/api/scanner': require('./api/scanner'), '/api/scanner-config': require('./api/scanner-config'), '/api/payment': require('./api/payment') };
+  if (handlers[pathname]) {
     if (fs.existsSync('.env.local')) process.loadEnvFile('.env.local');
     let body = '';
     for await (const chunk of req) {
@@ -32,11 +33,11 @@ http.createServer(async (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(data));
     };
-    return register(req, res);
+    return handlers[pathname](req, res);
   }
 
   const file = pathname === '/' ? 'index.html' : pathname.slice(1);
-  const allowed = ['register.html', 'event.js', 'index.html', 'styles.css', 'registration.js', 'thank-you.html', 'thank-you.js', 'robots.txt', 'sitemap.xml'].includes(file)
+  const allowed = ['scanner.html', 'scanner.js', 'register.html', 'event.js', 'index.html', 'styles.css', 'registration.js', 'thank-you.html', 'thank-you.js', 'robots.txt', 'sitemap.xml'].includes(file)
     || /^policies\/[a-z]+\.html$/.test(file)
     || /^assets\/[a-z]+\.(?:png|webp|jpg)$/.test(file);
   const showMissingPage = () => {

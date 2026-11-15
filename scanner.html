@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Gate verification | Naya Bharat 2047</title><link rel="stylesheet" href="/styles.css"><script src="/scanner.js" defer></script></head>
+<body class="policy-page"><header class="policy-header"><a href="/">Naya Bharat 2047</a></header><main class="policy"><article class="panel">
+<h1>Gate verification</h1><p>Authorised event staff only. Check the participant’s identity before confirming admission.</p>
+<form id="staff-login"><label for="staff-email">Staff email</label><input id="staff-email" type="email" autocomplete="username" required><label for="staff-password">Password</label><input id="staff-password" type="password" autocomplete="current-password" required><button>Sign in</button></form>
+<section id="scan-panel" hidden><button id="logout" type="button">Sign out</button><form id="scan-form"><label for="ticket-token">Scan QR with a reader, or paste ticket QR text</label><input id="ticket-token" required maxlength="150" autocomplete="off" spellcheck="false"><button>Check ticket</button></form><button id="camera-start" type="button">Scan with camera</button><button id="camera-stop" type="button" hidden>Stop camera</button><video id="camera" playsinline muted hidden style="width:100%;max-height:320px"></video><dl id="ticket-result"></dl><button id="admit" type="button" hidden>Confirm admission</button></section>
+<p id="scanner-message" role="status" aria-live="polite">Loading staff access…</p><p>Online verification is required. An image of a ticket does not prove identity. If verification is unavailable, contact the gate supervisor.</p>
+</article></main></body></html>

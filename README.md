@@ -18,3 +18,7 @@ Submit a booking with sample details, choose **Save pending registration**, and 
 Run migration 202611140002_participant_context.sql after the initial migration. It adds optional organization and city fields and preserves retries for older payloads. This migration was applied to the connected project during development.
 
 Run the local server with node dev-server.js. It reads credentials from the Git-ignored .env.local file.
+
+## Tickets and staff scanner
+
+See [TICKETING-SETUP.md](TICKETING-SETUP.md). Install with `npm ci`, test with `npm test`, run locally with `npm start`. `/scanner.html` is restricted through server-verified Supabase staff access. Easebuzz payment is deliberately disabled until its adapter and verification tests are added.

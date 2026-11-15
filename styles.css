@@ -164,3 +164,10 @@ button, input { font-family: inherit; }
 }
 
 .event-page { padding-bottom: 0; }
+
+#staff-login, #scan-form { display: grid; gap: 10px; margin: 24px 0; }
+#staff-login input, #scan-form input { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #8997a5; border-radius: 5px; font: inherit; }
+#scanner-message, #booking-message { padding: 14px; background: #f0f5f9; border-left: 3px solid #1d4d79; overflow-wrap: anywhere; }
+#ticket-result dd { margin: 0 0 12px; overflow-wrap: anywhere; }
+#ticket-result dt { font-weight: 700; }
+#scan-panel button, #registration-receipt button { min-height: 44px; margin: 4px 8px 8px 0; }

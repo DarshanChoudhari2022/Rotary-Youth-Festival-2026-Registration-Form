@@ -55,3 +55,9 @@ Easebuzz test merchant key and salt, production site/callback configuration, gat
 Current status: event and registration pages are separated. Payment fulfillment, PDF tickets, QR issuance, scanner login, redemption and recovery remain to be implemented and tested after gateway configuration is supplied.
 
 Provider reference: https://github.com/easebuzz/paywitheasebuzz-php-lib
+
+## Implementation update — 15 November 2026
+
+The ticketing foundation is implemented: Supabase ticket/payment/admission tables, idempotent server-only fulfillment, signed QR codes, protected PDF bundles, verified status on the thank-you page, and an authenticated gate scanner. See TICKETING-SETUP.md for exact deployment configuration and remaining launch requirements. The earlier random-token proposal is implemented as a stable UUID plus domain-separated HMAC-SHA256 instead; no participant information appears in the QR.
+
+Easebuzz initiation, callbacks and reconciliation remain deliberately disabled until integration and provider tests are completed. Food redemption and verified-contact cross-device recovery remain pending. No live payment or paid ticket has been created during testing.
