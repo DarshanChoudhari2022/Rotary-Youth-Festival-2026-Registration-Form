@@ -201,3 +201,51 @@ section.content-section .partner-art { display: none; }
 #ticket-result dd { margin: 0 0 12px; overflow-wrap: anywhere; }
 #ticket-result dt { font-weight: 700; }
 #scan-panel button, #registration-receipt button { min-height: 44px; margin: 4px 8px 8px 0; }
+
+/* Editorial layout shared by the event and booking journey. */
+.event-page { background: #fff; }
+.event-header { padding-top: 0; }
+.brandline { padding-block: 16px; }
+.page-navigation a[aria-current="page"] { color: #a70f44; }
+.countdown-banner {
+  width: 100%;
+  border-radius: 0;
+  min-height: 0;
+  padding: clamp(36px, 6vw, 80px) 16px;
+}
+.countdown-banner p { font-size: .9375rem; }
+#countdown { margin-bottom: 0; }
+.event-card {
+  display: block;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+.event-facts { padding: 0; border: 0; }
+.event-facts dl { margin: 0; }
+.event-facts dl > div { padding-block: 18px; }
+.event-facts dt { font-size: .875rem; margin-bottom: 4px; }
+.event-facts dd { font-size: 1rem; font-weight: 700; }
+.event-facts .register-link { display: block; text-align: center; border-radius: 8px; }
+.programme-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; font-weight: 600; }
+.event-layout { padding-top: clamp(28px, 5vw, 56px); }
+.event-section { font-size: 1rem; }
+.event-section h2 { font-size: clamp(1.375rem, 3vw, 1.75rem); }
+.event-tabs button { min-height: 44px; }
+#booking .panel, .policy .panel { border-radius: 8px; }
+@media (max-width: 640px) {
+  .event-facts dl { grid-template-columns: 1fr; gap: 0; margin-bottom: 16px; }
+  .event-facts dl > div {
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: 12px;
+    padding-block: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .event-facts dt { margin: 0; }
+  .event-tabs { flex-wrap: wrap; gap: 0 16px; }
+  #registration { padding-top: 28px; }
+}
