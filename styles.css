@@ -173,6 +173,23 @@ section.content-section .partner-art { display: none; }
 .booking-brand { font-weight: 700; text-decoration: none; }
 .booking-title { font-size: clamp(26px, 4vw, 32px); line-height: 1.2; margin: 0 0 12px; }
 .booking-context { color: #43556a; margin: 0 0 8px; font-size: 14px; }
+.brandline, .policy-header {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: .875rem;
+  line-height: 1.4;
+}
+.brandline > span, .booking-brand, .policy-header a:first-child {
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  font-weight: 700;
+}
+.countdown-banner h1, .booking-title, .policy h1 {
+  font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
 @media (max-width: 600px) {
   .brandline { flex-direction: column; align-items: flex-start; gap: 8px; }
   .page-navigation { width: 100%; gap: 24px; }
