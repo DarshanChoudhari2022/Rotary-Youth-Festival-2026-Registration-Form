@@ -162,3 +162,5 @@ button, input { font-family: inherit; }
   .footer-grid { grid-template-columns: 1fr; }
   .footer-event { grid-column: auto; }
 }
+
+.event-page { padding-bottom: 0; }

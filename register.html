@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book tickets | Naya Bharat 2047</title>
+<meta name="description" content="Register for Naya Bharat 2047, the Rotary &amp; Rotaract youth innovation festival on 21–22 November 2026 at Fergusson College, Pune.">
+<link rel="canonical" href="https://rotary-youth-festival-2026-registra.vercel.app/register.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Naya Bharat 2047">
+<meta property="og:title" content="Book tickets | Naya Bharat 2047">
+<meta property="og:description" content="Register for Naya Bharat 2047, the Rotary &amp; Rotaract youth innovation festival on 21–22 November 2026 at Fergusson College, Pune.">
+<meta property="og:url" content="https://rotary-youth-festival-2026-registra.vercel.app/register.html">
+<meta property="og:image" content="https://rotary-youth-festival-2026-registra.vercel.app/assets/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Naya Bharat 2047 Youth Innovation Festival, 21–22 November 2026, Fergusson College, Pune">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Book tickets | Naya Bharat 2047">
+<meta name="twitter:description" content="Register for Naya Bharat 2047, the Rotary &amp; Rotaract youth innovation festival on 21–22 November 2026 at Fergusson College, Pune.">
+<meta name="twitter:image" content="https://rotary-youth-festival-2026-registra.vercel.app/assets/share.jpg">
+<meta name="twitter:image:alt" content="Naya Bharat 2047 Youth Innovation Festival at Fergusson College, Pune">
+<link rel="stylesheet" href="styles.css">
+<script src="registration.js" defer></script>
+</head>
+<body>
+<header class="policy-header"><a href="/">Naya Bharat 2047</a><a href="/#schedule">Event details &amp; schedule</a></header>
+<main class="wrap" id="registration">
+  <h2>Book your tickets</h2>
+  <p class="muted">You can save a pending registration. Payment is currently unavailable.</p>
+  <form id="booking">
+    <section class="panel">
+      <fieldset>
+        <legend>1. Choose your visit</legend>
+        <p class="muted"><a href="/#schedule">Check the programme by date</a> before selecting your visit.</p>
+        <div class="options">
+          <label><input type="radio" name="visit" value="21" required> <span>21 November 2026<strong>₹200 / person</strong><small>Selected-day entry<br>Booking requests open</small></span></label>
+          <label><input type="radio" name="visit" value="22" required> <span>22 November 2026<strong>₹200 / person</strong><small>Selected-day entry<br>Booking requests open</small></span></label>
+          <label><input type="radio" name="visit" value="both" required> <span>Both days<strong>₹400 / person</strong><small>Both-day entry<br>Booking requests open</small></span></label>
+        </div>
+        <p class="muted">One ticket is valid for one participant. A two-day pass covers 21 and 22 November.</p>
+      </fieldset>
+    </section>
+    <section class="panel quantity">
+      <div><h3>Number of participants</h3><p class="muted">Maximum 10 participants per booking.</p></div>
+      <div class="counter"><button type="button" id="minus" aria-label="Remove a participant">−</button><output id="count" aria-label="Number of participants">1</output><button type="button" id="plus" aria-label="Add a participant">+</button></div>
+    </section>
+    <section class="panel">
+      <h3>2. Participant details</h3>
+      <p class="muted">Fields marked * are required. College / organization and city are optional.</p>
+      <div id="participants"></div>
+    </section>
+    <section class="panel">
+      <h3>3. Declarations</h3>
+      <label class="check"><input type="checkbox" required> <span>I confirm the participant details are accurate and complete.</span></label>
+      <label class="check"><input type="checkbox" required> <span>I agree to the <a data-policy="terms">Terms &amp; Conditions</a>, <a data-policy="privacy">Privacy Policy</a>, <a data-policy="refund">Refund &amp; Cancellation Policy</a>, <a data-policy="payment">Payment Terms</a> and <a data-policy="entry">Event Participation &amp; Entry Policy</a>.</span></label>
+      <label class="check" id="guardian-row" hidden><input type="checkbox" id="guardian" disabled> <span>I am the parent, legal guardian or an authorised person for every minor in this booking and have consent to register them. I have read the <a data-policy="guardian">Parent / Legal Guardian Consent</a>.</span></label>
+      <label class="check"><input type="checkbox" required> <span>I understand that tickets are generally non-refundable and non-transferable, subject to the <a data-policy="refund">Refund &amp; Cancellation Policy</a>.</span></label>
+      <label class="check"><input type="checkbox" required> <span>I understand that only participants below 16 are eligible for the applicable <a data-policy="food">food coupon</a>. The ticket price is the same for all ages.</span></label>
+    </section>
+  </form>
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-event"><strong>Naya Bharat 2047</strong><p>Rotary &amp; Rotaract Youth Festival<br>21–22 November 2026 · Fergusson College, Pune</p></div>
+    <nav aria-label="Event policies"><h2>Event policies</h2><a href="policies/terms.html">Terms &amp; Conditions</a><a href="policies/privacy.html">Privacy Policy</a><a href="policies/refund.html">Refund &amp; Cancellation</a><a href="policies/payment.html">Payment Terms</a><a href="policies/entry.html">Participation &amp; Entry</a><a href="policies/food.html">Food Coupon Policy</a><a href="policies/guardian.html">Parent / Guardian Consent</a><a href="policies/contact.html">Contact &amp; Grievance</a></nav>
+    <div class="footer-contact"><h2>Registration support</h2><p>Dr. Santosh More<br>District Co-Director</p><a href="tel:+919011023332">+91 90110 23332</a></div>
+  </div>
+  <div class="footer-bottom">Organised by Rotary &amp; Rotaract District 3131<br>In association with Deccan Education Society<br>Developed and maintained by <a href="https://www.bracketdex.com/">Bracketdex</a></div>
+</footer></main>
+<aside class="summary" aria-label="Booking summary">
+  <div class="wrap summary-inner">
+    <div><strong>Booking summary</strong><p id="visit-summary">Choose your visit</p><p id="breakdown" aria-live="polite">1 participant</p></div>
+    <div class="payment"><button id="pay" form="booking" type="submit" disabled>Select a visit</button></div>
+  </div>
+</aside>
+<dialog id="review">
+  <h2>4. Review &amp; confirmation</h2>
+  <p id="review-total"></p>
+  <ol id="review-participants"></ol>
+  <p class="muted">Saving this booking creates a pending registration. Entry requires a verified payment.</p>
+  <p id="save-status" role="status"></p>
+  <button id="save-booking" type="button">Save pending registration</button>
+  <form method="dialog"><button type="submit">Back to registration</button></form>
+</dialog>
+<template id="participant-template">
+  <details class="participant">
+    <summary><span class="participant-title"></span><small class="participant-status"></small></summary>
+    <div class="fields">
+      <label>First name * <input name="first" autocomplete="given-name" maxlength="100" placeholder="Enter first name" required></label>
+      <label>Last name * <input name="last" autocomplete="family-name" maxlength="100" placeholder="Enter last name" required></label>
+      <label>Mobile number * <span class="phone"><span aria-hidden="true">+91</span><input name="mobile" type="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" title="Enter 10 digits starting with 6, 7, 8 or 9" maxlength="10" placeholder="10-digit mobile number" aria-label="Indian mobile number, 10 digits" required></span></label>
+      <label>Email ID * <input name="email" autocomplete="email" type="email" maxlength="254" placeholder="Enter email address" required></label>
+      <label>Date of birth * <input name="dob" min="0001-01-01" autocomplete="bday" type="date" required></label>
+      <label>College / organization <input name="organization" autocomplete="organization" maxlength="160" placeholder="Optional"></label><label>City <input name="city" autocomplete="address-level2" maxlength="100" placeholder="Optional"></label><p class="eligibility muted" aria-live="polite"></p>
+    </div>
+  </details>
+</template>
+</body>
+</html>
