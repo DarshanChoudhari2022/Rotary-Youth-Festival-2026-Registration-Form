@@ -215,6 +215,15 @@ section.content-section .partner-art { display: none; }
 }
 .countdown-banner p { font-size: .9375rem; }
 #countdown { margin-bottom: 0; }
+#countdown span { position: relative; min-width: 0; }
+#countdown span + span::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 18px;
+  left: -15px;
+  border-left: 1px solid #ffffff65;
+}
 .event-card {
   display: block;
   min-height: 0;
@@ -233,9 +242,12 @@ section.content-section .partner-art { display: none; }
 .event-layout { padding-top: clamp(28px, 5vw, 56px); }
 .event-section { font-size: 1rem; }
 .event-section h2 { font-size: clamp(1.375rem, 3vw, 1.75rem); }
+.event-section > p { max-width: 65ch; }
 .event-tabs button { min-height: 44px; }
 #booking .panel, .policy .panel { border-radius: 8px; }
 @media (max-width: 640px) {
+  #countdown { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; max-width: 360px; margin-inline: auto; }
+  #countdown span + span::before { left: 0; }
   .event-facts dl { grid-template-columns: 1fr; gap: 0; margin-bottom: 16px; }
   .event-facts dl > div {
     display: grid;
