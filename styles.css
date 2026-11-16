@@ -164,7 +164,19 @@ button, input { font-family: inherit; }
 }
 
 .event-page { padding-bottom: 0; }
-section.content-section .partner-art { display: none; }
+.organiser-logos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+.organiser-logos li { display: grid; place-items: center; min-height: 84px; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.organiser-logos img { display: block; width: auto; height: auto; max-width: 100%; max-height: 60px; }
+.faq details { padding: 0; }
+.faq summary { padding: 12px 0; cursor: pointer; }
+.faq details p { margin: 0 0 12px; }
 .page-navigation { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
 .page-navigation a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; border-bottom: 2px solid transparent; font-size: 14px; font-weight: 600; }
 .page-navigation a[aria-current="page"] { border-bottom-color: #c80f50; }

@@ -39,7 +39,7 @@ http.createServer(async (req, res) => {
   const file = pathname === '/' ? 'index.html' : pathname.slice(1);
   const allowed = ['scanner.html', 'scanner.js', 'register.html', 'event.js', 'index.html', 'styles.css', 'registration.js', 'thank-you.html', 'thank-you.js', 'robots.txt', 'sitemap.xml'].includes(file)
     || /^policies\/[a-z]+\.html$/.test(file)
-    || /^assets\/[a-z]+\.(?:png|webp|jpg)$/.test(file);
+    || /^assets\/[a-z]+(?:-[a-z]+)*\.(?:png|webp|jpg)$/.test(file);
   const showMissingPage = () => {
     res.writeHead(404, { 'Content-Type': types['.html'] });
     res.end(fs.readFileSync(path.join(__dirname, '404.html')));
