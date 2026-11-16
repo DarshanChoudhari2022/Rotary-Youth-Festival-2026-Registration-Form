@@ -223,9 +223,10 @@ button, input { font-family: inherit; }
   width: 100%;
   border-radius: 0;
   min-height: 0;
-  padding: clamp(36px, 6vw, 80px) 16px;
+  padding: clamp(36px, 6vw, 80px) 16px clamp(62px, 8vw, 106px);
 }
 .countdown-banner p { font-size: .9375rem; }
+.countdown-banner .hero-date { margin: 22px 0 0; font-size: .875rem; }
 #countdown { margin-bottom: 0; }
 #countdown span { position: relative; min-width: 0; }
 #countdown span + span::before {
@@ -239,18 +240,33 @@ button, input { font-family: inherit; }
 .event-card {
   display: block;
   min-height: 0;
-  margin: 0 auto;
-  padding: 0;
-  border: 0;
-  box-shadow: none;
+  margin: -34px auto 0;
+  padding: 14px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px #18263318;
 }
 .event-facts { padding: 0; border: 0; }
 .event-facts dl { margin: 0; }
 .event-facts dl > div { padding-block: 18px; }
-.event-facts dt { font-size: .875rem; margin-bottom: 4px; }
+.event-facts dt { display: flex; align-items: center; gap: 8px; font-size: .875rem; margin-bottom: 4px; }
+.event-fact-icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: #1c3042;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .event-facts dd { font-size: 1rem; font-weight: 700; }
 .event-facts .register-link { display: block; text-align: center; border-radius: 8px; }
-.programme-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; font-weight: 600; }
+.programme-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #a70f44; font-weight: 700; text-decoration: none; }
+.programme-link:hover { text-decoration: underline; }
+.festival-intro { grid-column: 1 / -1; max-width: 56ch; }
+.festival-intro h2 { margin-bottom: 12px; }
+.festival-intro h2::after { content: ""; display: block; width: 44px; height: 3px; margin-top: 8px; background: #c31655; }
 .event-layout { padding-top: clamp(28px, 5vw, 56px); }
 .event-section { font-size: 1rem; }
 .event-section h2 { font-size: clamp(1.375rem, 3vw, 1.75rem); }
@@ -258,18 +274,23 @@ button, input { font-family: inherit; }
 .event-tabs button { min-height: 44px; }
 #booking .panel, .policy .panel { border-radius: 8px; }
 @media (max-width: 640px) {
+  .event-header .brandline { padding-block: 12px; gap: 0; }
+  .event-card { padding: 6px 12px 12px; }
+  .event-layout { gap: 20px; }
+  .festival-intro p { margin-bottom: 0; }
   #countdown { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; max-width: 360px; margin-inline: auto; }
   #countdown span + span::before { left: 0; }
-  .event-facts dl { grid-template-columns: 1fr; gap: 0; margin-bottom: 16px; }
+  .event-facts dl { grid-template-columns: 1fr; gap: 0; margin-bottom: 6px; }
   .event-facts dl > div {
     display: grid;
-    grid-template-columns: 4rem minmax(0, 1fr);
-    align-items: baseline;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    align-items: center;
     gap: 12px;
     padding-block: 12px;
     border-bottom: 1px solid var(--line);
   }
   .event-facts dt { margin: 0; }
+  .event-facts dl > div:last-child { border-bottom: 0; }
   .event-tabs { flex-wrap: wrap; gap: 0 16px; }
   #registration { padding-top: 28px; }
 }
