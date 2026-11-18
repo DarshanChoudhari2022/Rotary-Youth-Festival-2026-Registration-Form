@@ -17,10 +17,14 @@ Add `SUPABASE_PUBLISHABLE_KEY`: your Supabase publishable key for staff sign-in.
 Add `SCANNER_STAFF_IDS`: comma-separated Supabase Auth user UUIDs explicitly authorised by the organiser. Create individual staff accounts in Supabase Auth; do not use shared passwords. Without this value, nobody can verify tickets.
 Redeploy after configuring variables. Never put the secret key or signing secret in client JavaScript.
 
-## Still required before paid launch
-1. Integrate Easebuzz test credentials and hosted checkout. The current payment endpoint deliberately returns 503 even if credentials are added.
-2. Implement hash validation and server-to-server reconciliation of merchant, transaction, amount, currency and final success before invoking `fulfill_festival_payment`. Never invoke fulfillment from a browser response. Test failed/pending/cancelled/late/duplicate callbacks and concurrent fulfillment.
-3. Add immutable payment-attempt records and recovery/reconciliation. No cross-device booking recovery or payment callbacks are implemented in this release. Existing bookings without a signed access token require support; do not re-register using a duplicate phone number.
+## Easebuzz Live Mode
+Apply the payment-attempt migration before enabling checkout. Set `EASEBUZZ_KEY` and `EASEBUZZ_SALT` as sensitive production variables, then set `EASEBUZZ_LIVE_ENABLED=true` and redeploy.
+
+The booking page creates one checkout reference per saved registration and reuses that reference. The Easebuzz browser return triggers a signed server-to-server lookup. Only a successful lookup with matching merchant key, reference and INR booking amount can issue tickets. The status button can retry verification if the return was interrupted.
+
+If a checkout expires or initiation times out, verify its status in the Easebuzz dashboard before arranging a replacement with support. If the visitor loses their booking access, use the existing registration reference for support.
+
+## Operational checks
 4. Assign gate staff and test real staff login, phones, HTTPS camera permissions, connectivity and simultaneous scans. Camera support depends on BarcodeDetector availability; a hardware QR reader or decoded-text input is provided as fallback.
 5. Confirm food-coupon quantities and daily rules before enabling redemption. This release does not issue or redeem food coupons.
 6. Confirm receipt issuer/tax details. The PDF is a payment acknowledgement, not a GST invoice.

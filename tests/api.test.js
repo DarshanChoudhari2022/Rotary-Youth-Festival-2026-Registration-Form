@@ -25,5 +25,5 @@ test('download requires valid access and verified payment; paid PDF has ticket p
  } finally {global.fetch=original;}
 });
 test('gateway endpoint remains disabled', async () => {
- const res=response(); require('../api/payment')({method:'POST'},res); assert.equal(res.statusCode,503);
+ const res=response(); await require('../api/payment')({method:'POST'},res); assert.equal(res.statusCode,503);
 });

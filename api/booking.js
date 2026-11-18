@@ -1,4 +1,5 @@
 const { authorize, db, qr } = require('../lib/tickets');
+const { enabled } = require('../lib/easebuzz');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const path = require('node:path');
@@ -13,7 +14,7 @@ module.exports = async (req, res) => {
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     const [payment] = await db(`festival_payments?registration_id=eq.${id}&revoked_at=is.null`);
     const paid = booking.status === 'paid' && payment?.amount_paise === booking.amount_paise;
-    if (body.action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: false });
+    if (body.action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: enabled() && booking.status === 'pending' });
     if (!paid) return res.status(409).json({ error: 'Tickets are available only after verified payment.' });
     const tickets = await db(`festival_tickets?registration_id=eq.${id}&order=position`);
     const people = await db(`registration_participants?registration_id=eq.${id}&order=position`);
