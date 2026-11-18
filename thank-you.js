@@ -30,12 +30,18 @@ async function booking(action = 'status') {
   return response;
 }
 async function downloadTickets() {
+  if (download.disabled) return;
   download.disabled = true;
   try {
     const blob = await (await booking('download')).blob();
+    if (blob.type !== 'application/pdf') throw new Error('The ticket PDF is temporarily unavailable. Please retry.');
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url; link.download = `${saved.registration_id}-tickets.pdf`; link.click();
+    link.href = url; link.download = `${saved.registration_id}-tickets.pdf`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    sessionStorage.setItem('downloaded-' + saved.registration_id, 'yes');
     setTimeout(() => URL.revokeObjectURL(url), 60000);
     message.textContent = 'Your tickets and payment acknowledgement are ready. If the download did not start, use the download button.';
   } catch (error) { message.textContent = error.message; }
@@ -54,7 +60,7 @@ async function refresh() {
       : result.payment_enabled ? 'Pay securely with Easebuzz. If you just paid, check payment status before trying again.'
       : 'Online payment is currently unavailable. Your registration is saved.';
     if (result.status === 'paid' && !sessionStorage.getItem('downloaded-' + saved.registration_id)) {
-      sessionStorage.setItem('downloaded-' + saved.registration_id, 'yes'); await downloadTickets();
+      await downloadTickets();
     }
   } catch (error) { message.textContent = error.message; download.hidden = true; pay.hidden = true; }
   finally { button.disabled = false; }

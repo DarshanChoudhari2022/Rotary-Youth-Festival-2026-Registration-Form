@@ -3,6 +3,35 @@ const { enabled } = require('../lib/easebuzz');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const path = require('node:path');
+const fs = require('node:fs');
+
+function participantAge(dob, date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dob || '')) return 'Unavailable';
+  const years = Number(date.slice(0, 4)) - Number(dob.slice(0, 4))
+    - Number(date.slice(5) < dob.slice(5));
+  return `${years} years`;
+}
+
+function ticketFont() {
+  const locations = [
+    path.join(process.cwd(), 'fonts', 'NotoSansDevanagari.ttf'),
+    path.join(__dirname, '../fonts/NotoSansDevanagari.ttf'),
+  ];
+  const filename = locations.find(location => fs.existsSync(location));
+  return filename ? fs.readFileSync(filename) : 'Helvetica';
+}
+
+function heading(doc, label) {
+  doc.rect(0, 0, doc.page.width, 112).fill('#14263D');
+  doc.fillColor('#FFFFFF').fontSize(26).text('Naya Bharat 2047', 48, 36);
+  doc.fontSize(11).text('Rotary & Rotaract District 3131');
+  doc.fillColor('#14263D').fontSize(19).text(label, 48, 142).moveDown(0.6);
+}
+
+function detail(doc, label, value) {
+  doc.fillColor('#526475').fontSize(9).text(label);
+  doc.fillColor('#14263D').fontSize(12).text(value).moveDown(0.45);
+}
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
@@ -20,32 +49,51 @@ module.exports = async (req, res) => {
         : booking.visit === '21' ? 'Saturday, 21 November 2026' : 'Sunday, 22 November 2026';
     if (body.action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: enabled() && booking.status === 'pending' });
     if (!paid) return res.status(409).json({ error: 'Tickets are available only after verified payment.' });
-    const tickets = await db(`festival_tickets?registration_id=eq.${id}&order=position`);
+    const allTickets = await db(`festival_tickets?registration_id=eq.${id}&order=position`);
+    const tickets = allTickets.filter(ticket => !ticket.revoked_at);
     const people = await db(`registration_participants?registration_id=eq.${id}&order=position`);
-    if (tickets.length !== booking.quantity || tickets.some(t => t.revoked_at)) return res.status(409).json({ error: 'Tickets are unavailable. Please contact event support.' });
-    const doc = new PDFDocument({ size: 'A4', margin: 48 });
-    doc.font(path.join(__dirname, '../fonts/NotoSansDevanagari.ttf'));
+    if (allTickets.length !== booking.quantity || !tickets.length) return res.status(409).json({ error: 'Tickets are unavailable. Please contact event support.' });
+    const doc = new PDFDocument({ size: 'A4', margin: 48, font: ticketFont() });
     const chunks = [];
     const completed = new Promise((resolve, reject) => { doc.on('data', c => chunks.push(c)); doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject); });
-    doc.fontSize(26).text('Naya Bharat 2047');
-    doc.fontSize(12).text('Rotary & Rotaract District 3131').moveDown();
-    doc.fontSize(20).text('Payment acknowledgement').moveDown();
-    doc.fontSize(12).text(`Registration: ${id}\nPaid: INR ${(booking.amount_paise / 100).toFixed(2)}\nTicket coverage: ${visitLabel}\nParticipants: ${booking.quantity}\nPayment reference: ${payment.transaction_id}\nVerified: ${payment.verified_at}`).moveDown();
+    heading(doc, 'Payment acknowledgement');
+    detail(doc, 'Registration', id);
+    detail(doc, 'Amount paid', `INR ${(booking.amount_paise / 100).toFixed(2)}`);
+    detail(doc, 'Ticket coverage', visitLabel);
+    detail(doc, 'Participants', String(booking.quantity));
+    detail(doc, 'Payment reference', payment.transaction_id);
+    detail(doc, 'Verified at', payment.verified_at);
     doc.text('This is a payment acknowledgement, not a GST tax invoice.');
+    const ageDate = isDemo ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(payment.verified_at))
+      : booking.visit === '22' ? '2026-11-22' : '2026-11-21';
     for (const ticket of tickets) {
       const person = people.find(p => p.position === ticket.position);
-      doc.addPage().fontSize(26).text('Naya Bharat 2047').fontSize(14).text(isDemo ? 'Demo ticket' : 'Participant entry ticket').moveDown();
-      if (isDemo) doc.text('PAYMENT TEST - NOT VALID FOR EVENT ADMISSION').moveDown();
-      doc.fontSize(18).text(`${person.first_name} ${person.last_name}`).fontSize(12).moveDown();
-      doc.text(`Ticket coverage: ${visitLabel}\n${isDemo ? '' : 'Venue: Fergusson College, Pune\n'}Registration: ${id}\nTicket: ${ticket.id}`);
-      doc.image(await QRCode.toBuffer(qr(ticket.id), { width: 300, errorCorrectionLevel: 'M' }), 48, 260, { width: 240 });
-      doc.text(isDemo ? 'This QR is for scanner testing only.\nSupport: +91 90110 23332'
-        : 'Present this QR and identification at the gate.\nValid for one admission per selected day. Do not share this ticket.\nAuthenticity and admission are checked online by authorised staff.\nSupport: +91 90110 23332', 48, 530);
+      doc.addPage();
+      heading(doc, isDemo ? 'Demo ticket' : 'Participant entry ticket');
+      if (isDemo) doc.fillColor('#9E1649').fontSize(11).text('PAYMENT TEST - NOT VALID FOR EVENT ADMISSION').moveDown();
+      detail(doc, 'Participant', `${person.first_name} ${person.last_name}`);
+      detail(doc, 'Mobile', person.mobile || 'Unavailable');
+      detail(doc, 'Email', person.email || 'Unavailable');
+      detail(doc, isDemo ? 'Age on payment date' : 'Age on first booked day', participantAge(person.date_of_birth, ageDate));
+      if (person.organization) detail(doc, 'College / organisation', person.organization);
+      if (person.city) detail(doc, 'City', person.city);
+      detail(doc, 'Booked dates', visitLabel);
+      if (!isDemo) detail(doc, 'Venue', 'Fergusson College, Pune');
+      detail(doc, 'Registration / ticket ID', `${id} / ${ticket.id}`);
+      const qrImage = await QRCode.toBuffer(qr(ticket.id), { width: 300, errorCorrectionLevel: 'M' });
+      const qrTop = doc.y;
+      doc.image(qrImage, 48, qrTop, { width: 112 });
+      doc.fillColor('#526475').fontSize(10).text(isDemo
+        ? 'Scan this QR to test the gate scanner. Support: +91 90110 23332.'
+        : 'Present this QR and your identification. One admission per booked day. Support: +91 90110 23332.', 176, qrTop + 16);
     }
     doc.end();
     const pdf = await completed;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${id}-tickets.pdf"`);
     return res.end(pdf);
-  } catch { return res.status(503).json({ error: 'Unable to verify your booking. Please retry; do not pay again.' }); }
+  } catch (error) {
+    console.error('Booking request failed', { action: body?.action === 'download' ? 'download' : 'status', type: error.name, code: error.code });
+    return res.status(503).json({ error: 'Could not prepare your booking details. Please retry. If payment is verified, do not pay again.' });
+  }
 };
