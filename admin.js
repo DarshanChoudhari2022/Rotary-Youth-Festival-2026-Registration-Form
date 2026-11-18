@@ -28,6 +28,7 @@ function signOut() {
   clearTimeout(attendanceTimer);
   byId('admin-daily-attendance').hidden = true;
   byId('attendance-cards').replaceChildren();
+  byId('attendance-metrics').replaceChildren();
   ++loadVersion;
   listRequest?.abort();
   if (edit.open) edit.close();
@@ -88,7 +89,7 @@ function openEditor(person) {
 }
 
 function renderPerson(person) {
-  const row = document.createElement('article');
+  const row = document.createElement('details');
   row.className = 'admin-record';
   const visit = person.checkout_test || person.visit === 'demo' ? 'Demo'
     : { '21': '21 November 2026', '22': '22 November 2026', both: '21–22 November 2026' }[person.visit];
@@ -104,7 +105,14 @@ function renderPerson(person) {
   ]) {
     if (value) details.append(element('dt', label), element('dd', value));
   }
-  row.append(element('h3', person.first_name + ' ' + person.last_name), details);
+  const summary = document.createElement('summary');
+  const name = element('strong', [person.first_name, person.last_name].filter(Boolean).join(' '));
+  name.append(element('small', person.booking_id));
+  const paid = person.status === 'paid';
+  const payment = element('span', paid ? 'Paid' : 'Pending');
+  payment.className = paid ? 'desk-paid' : 'desk-pending';
+  summary.append(name, element('span', visit), payment, element('b', amount));
+  row.append(summary, details);
   const actions = document.createElement('div');
   actions.className = 'admin-actions';
   const editButton = element('button', 'Edit');
@@ -150,7 +158,7 @@ async function loadDashboard(includeDays = true) {
     if (version === loadVersion) byId('admin-results').removeAttribute('aria-busy');
   }
   if (version !== loadVersion) return;
-  const days = result.days.map(day => {
+  const days = (result.days ?? []).map(day => {
     const card = document.createElement('article');
     card.className = 'panel';
     const title = attendanceDate.format(new Date(day.day));
@@ -194,6 +202,7 @@ login.addEventListener('submit', async event => {
     role = (await adminRequest({ action: 'session' })).role;
     byId('admin-add').hidden = !['super', 'registration'].includes(role);
     byId('admin-operations').hidden = role !== 'super';
+    byId('operations-link').hidden = role !== 'super';
     login.hidden = true;
     dashboard.hidden = false;
     if (role === 'super') {
@@ -304,6 +313,18 @@ async function refreshAttendance() {
   const status = byId('attendance-status');
   try {
     const days = await adminRequest({ action: 'daily_attendance' });
+    const registered = days.reduce((sum, day) => sum + Number(day.registered), 0);
+    const checked = days.reduce((sum, day) => sum + Number(day.checked_in), 0);
+    const percent = registered ? Math.round(checked / registered * 1000) / 10 : 0;
+    const metrics = [
+      ['Registered day entries', registered], ['Checked in', checked],
+      ['Awaiting check-in', registered - checked], ['Attendance rate', percent + '%'],
+    ].map(([label, value]) => {
+      const tile = document.createElement('div');
+      tile.append(element('span', label), element('strong', value.toLocaleString('en-IN')));
+      return tile;
+    });
+    byId('attendance-metrics').replaceChildren(...metrics);
     const cards = days.map((day, index) => {
       const card = document.createElement('article');
       card.className = 'attendance-card';

@@ -42,7 +42,7 @@ http.createServer(async (req, res) => {
   }
 
   const file = pathname === '/' ? 'index.html' : pathname === '/admin' ? 'admin.html' : pathname.slice(1);
-  const allowed = ['admin.html', 'admin.js', 'scanner.html', 'scanner.js', 'register.html', 'event.js', 'index.html', 'styles.css', 'registration.js', 'thank-you.html', 'thank-you.js', 'robots.txt', 'sitemap.xml'].includes(file)
+  const allowed = ['admin.html', 'dashboard.css', 'admin.js', 'scanner.html', 'scanner.js', 'register.html', 'event.js', 'index.html', 'styles.css', 'registration.js', 'thank-you.html', 'thank-you.js', 'robots.txt', 'sitemap.xml'].includes(file)
     || /^policies\/[a-z]+\.html$/.test(file)
     || /^assets\/[a-z]+(?:-[a-z]+)*\.(?:png|webp|jpg)$/.test(file);
   const showMissingPage = () => {

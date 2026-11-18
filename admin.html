@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>Festival administration | Naya Bharat 2047</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/dashboard.css">
   <script src="/admin.js" defer></script>
 </head>
 <body class="admin-shell">
@@ -22,12 +23,24 @@
       <button disabled>Sign in</button>
     </form>
     <section id="admin-dashboard" hidden>
+      <aside class="desk-rail"><strong>Festival workspace</strong>
+        <nav aria-label="Staff navigation"><a href="#desk-overview">Overview</a><a href="#desk-directory">Participants</a><a href="#admin-operations" id="operations-link" hidden>Event operations</a></nav>
+        <div class="desk-staff-actions">
+          <a href="/scanner.html">Gate scanner</a>
+          <button type="button" id="admin-sign-out">Sign out</button>
+        </div>
+      </aside>
+      <div class="desk-content"><div class="desk-heading" id="desk-overview"><div><p>21–22 November 2026</p><h2>Event overview</h2></div><button type="button" id="admin-add" hidden>+ Add participant</button></div>
       <section id="admin-daily-attendance" class="panel" hidden aria-labelledby="daily-attendance-title">
-        <h2 id="daily-attendance-title">Daily attendance</h2>
+        <div id="attendance-metrics" class="desk-metrics"></div><h2 id="daily-attendance-title">Daily attendance</h2>
         <p id="attendance-status">Loading attendance…</p>
         <div id="attendance-cards" class="admin-days"></div>
       </section>
-      <div class="admin-toolbar"><h2>Registrations and tickets</h2><button type="button" id="admin-add" hidden>+ Add Participant</button><button type="button" id="admin-sign-out">Sign out</button></div>
+      <details class="panel"><summary>Registration breakdown by day</summary>
+        <p>Two-day bookings count on both days. Demo bookings are excluded. Paid totals count active passes only.</p>
+        <div id="admin-days" class="admin-days"></div>
+      </details>
+      <section id="desk-directory" class="desk-directory"><h2>Participant directory</h2>
       <form id="admin-search" class="panel admin-toolbar admin-search">
         <label for="admin-find">Search participants</label>
         <input id="admin-find" type="search" maxlength="254" placeholder="Name, mobile, email, or ID">
@@ -37,10 +50,8 @@
       <p id="admin-empty" hidden>No matching registrations.</p>
       <div id="admin-results" class="admin-results" aria-label="Registration results"></div>
       <div class="admin-toolbar"><button type="button" id="admin-previous">Previous</button><span id="admin-page-number"></span><button type="button" id="admin-next">Next</button></div>
-      <details class="panel"><summary>Attendance by day</summary>
-        <p>Two-day bookings count on both days. Demo bookings are excluded. Paid totals count active passes only.</p>
-        <div id="admin-days" class="admin-days"></div>
-      </details>
+
+      </section>
       <section id="admin-operations" class="panel" hidden>
         <div class="admin-toolbar"><h2>Event operations</h2><button id="admin-report-refresh" type="button">Refresh report</button></div>
         <p id="admin-report-status" role="status"></p>
@@ -55,6 +66,7 @@
         </form>
         <div id="admin-staff-list"></div>
       </section>
+      </div>
     </section>
     <dialog id="admin-spot" aria-labelledby="spot-title">
       <form id="admin-spot-form" class="admin-form">
