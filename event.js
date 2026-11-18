@@ -28,15 +28,13 @@ const hero = document.querySelector('.festival-hero');
 const countdownSlide = document.querySelector('#festival-countdown-slide');
 const offerSlide = document.querySelector('#festival-offer-slide');
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const hover = window.matchMedia('(hover: hover)');
-const heroSlideDuration = 3000;
+const heroSlideDuration = 5000;
 let heroTimer;
 let heroInView = true;
 
 function scheduleHero() {
   clearTimeout(heroTimer);
-  if (heroInView && !motion.matches && !document.hidden && !hero.contains(document.activeElement)
-      && !(hover.matches && hero.matches(':hover'))) {
+  if (heroInView && !motion.matches && !document.hidden && !hero.contains(document.activeElement)) {
     heroTimer = setTimeout(toggleHero, heroSlideDuration);
   }
 }
@@ -53,8 +51,6 @@ function toggleHero() {
 
 hero.addEventListener('focusin', scheduleHero);
 hero.addEventListener('focusout', () => setTimeout(scheduleHero, 0));
-hero.addEventListener('mouseenter', scheduleHero);
-hero.addEventListener('mouseleave', scheduleHero);
 document.addEventListener('visibilitychange', scheduleHero);
 motion.addEventListener('change', scheduleHero);
 if ('IntersectionObserver' in window) {
