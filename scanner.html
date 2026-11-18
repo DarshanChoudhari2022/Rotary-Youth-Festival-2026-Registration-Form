@@ -1,8 +1,52 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Gate verification | Naya Bharat 2047</title><link rel="stylesheet" href="/styles.css"><script src="/scanner.js" defer></script></head>
-<body class="policy-page"><header class="policy-header"><a href="/">Naya Bharat 2047</a></header><main class="policy"><article class="panel">
-<h1>Gate verification</h1><p>Authorised event staff only. Check the participant’s identity before confirming admission.</p>
-<form id="staff-login"><label for="staff-email">Staff email</label><input id="staff-email" type="email" autocomplete="username" required><label for="staff-password">Password</label><input id="staff-password" type="password" autocomplete="current-password" required><button>Sign in</button></form>
-<section id="scan-panel" hidden><button id="logout" type="button">Sign out</button><form id="scan-form"><label for="ticket-token">Scan QR with a reader, or paste ticket QR text</label><input id="ticket-token" required maxlength="150" autocomplete="off" spellcheck="false"><button>Check ticket</button></form><button id="camera-start" type="button">Scan with camera</button><button id="camera-stop" type="button" hidden>Stop camera</button><video id="camera" playsinline muted hidden style="width:100%;max-height:320px"></video><dl id="ticket-result"></dl><button id="admit" type="button" hidden>Confirm admission</button></section>
-<p id="scanner-message" role="status" aria-live="polite">Loading staff access…</p><p>Online verification is required. An image of a ticket does not prove identity. If verification is unavailable, contact the gate supervisor.</p>
-</article></main></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Gate verification | Naya Bharat 2047</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/scanner.js" defer></script>
+</head>
+<body class="scanner-page">
+  <header class="policy-header"><a href="/">Naya Bharat 2047</a></header>
+  <main class="scanner-main">
+    <h1>Gate verification</h1>
+    <p class="scanner-intro">Check the participant’s identity before confirming admission.</p>
+    <form id="staff-login" class="scanner-card scanner-form">
+      <h2>Staff sign-in</h2>
+      <label for="staff-email">Staff email</label>
+      <input id="staff-email" type="email" autocomplete="username" required>
+      <label for="staff-password">Password</label>
+      <input id="staff-password" type="password" autocomplete="current-password" required>
+      <button>Sign in</button>
+    </form>
+    <section id="scan-panel" hidden>
+      <div class="scanner-card">
+        <div class="scanner-heading">
+          <h2>Scan ticket QR</h2>
+          <button id="logout" class="scanner-secondary" type="button">Sign out</button>
+        </div>
+        <p>Point your camera at the QR code on the ticket.</p>
+        <button id="camera-start" class="scanner-primary" type="button">Scan with camera</button>
+        <video id="camera" playsinline muted hidden></video>
+        <button id="camera-stop" class="scanner-secondary" type="button" hidden>Stop camera</button>
+        <label for="qr-photo">Or choose a photo of the QR code</label>
+        <input id="qr-photo" type="file" accept="image/*">
+      </div>
+      <form id="scan-form" class="scanner-card scanner-form">
+        <h2>Manual verification</h2>
+        <label for="ticket-token">Ticket QR reference</label>
+        <input id="ticket-token" required maxlength="150" autocomplete="off" spellcheck="false"
+          aria-describedby="ticket-token-help" placeholder="RYF26:…">
+        <p id="ticket-token-help">Use a QR reader or paste the full decoded QR text.</p>
+        <button class="scanner-secondary">Check ticket</button>
+      </form>
+    </section>
+    <p id="scanner-message" role="status">Loading staff access…</p>
+    <dl id="ticket-result"></dl>
+    <button id="admit" class="scanner-primary" type="button" hidden>Confirm admission</button>
+    <p class="scanner-note">Online verification is required. If it is unavailable, contact the gate supervisor.</p>
+  </main>
+</body>
+</html>

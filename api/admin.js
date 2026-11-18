@@ -22,7 +22,10 @@ module.exports = async (req, res) => {
     try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; }
     catch { return res.status(400).json({ error: 'Invalid request.' }); }
     if (body?.action === 'list') {
-      const page = Number.isSafeInteger(body.page) && body.page >= 0 ? body.page : 0;
+      if (body.page != null && (!Number.isSafeInteger(body.page) || body.page < 0 || body.page > 1000)) {
+        return res.status(400).json({ error: 'Page unavailable. Search by registration or ticket ID.' });
+      }
+      const page = body.page ?? 0;
       const find = typeof body.find === 'string' ? body.find.trim().slice(0, 64) : '';
       return res.json(await rpc('festival_admin_dashboard', { p_page: page, p_find: find }));
     }

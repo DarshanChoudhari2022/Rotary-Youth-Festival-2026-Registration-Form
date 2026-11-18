@@ -12,14 +12,51 @@ $('#staff-login').addEventListener('submit', async event => {
     if (!response.ok) throw new Error('Unable to sign in. Check your credentials and try again.');
     accessToken = (await response.json()).access_token;
     $('#staff-login').hidden = true; $('#scan-panel').hidden = false;
-    message.textContent = 'Ready to verify a ticket.'; $('#ticket-token').focus();
+    message.textContent = 'Ready to verify a ticket.'; $('#camera-start').focus({ preventScroll: true });
   } catch (error) { message.textContent = error.message; } finally { button.disabled = false; }
 });
-function stopCamera() { scanning = false; stream?.getTracks().forEach(t => t.stop()); $('#camera').hidden = true; $('#camera-stop').hidden = true; }
+let cameraSession = 0;
+let decoder;
+const canvas = document.createElement('canvas');
+const pixels = canvas.getContext('2d', { willReadFrequently: true });
+
+function loadDecoder() {
+  decoder ??= new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '/qr-decoder.js';
+    script.onload = () => window.jsQR ? resolve(window.jsQR) : reject(new Error('QR decoder unavailable.'));
+    script.onerror = () => { script.remove(); reject(new Error('QR decoder unavailable.')); };
+    document.head.append(script);
+  }).catch(error => { decoder = undefined; throw error; });
+  return decoder;
+}
+
+function decodeFrame(decode, source, width, height, maxSize) {
+  const scale = Math.min(1, maxSize / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale));
+  const h = Math.max(1, Math.round(height * scale));
+  if (canvas.width !== w) canvas.width = w;
+  if (canvas.height !== h) canvas.height = h;
+  pixels.drawImage(source, 0, 0, w, h);
+  return decode(pixels.getImageData(0, 0, w, h).data, w, h)?.data;
+}
+
+function stopCamera() {
+  cameraSession++;
+  scanning = false;
+  stream?.getTracks().forEach(track => track.stop());
+  stream = undefined;
+  const video = $('#camera');
+  video.srcObject = null;
+  video.hidden = true;
+  $('#camera-stop').hidden = true;
+  $('#camera-start').disabled = false;
+}
 $('#logout').onclick = () => { stopCamera(); accessToken = null; checkedToken = null; $('#ticket-result').replaceChildren(); $('#admit').hidden = true; $('#ticket-token').value = ''; $('#scan-panel').hidden = true; $('#staff-login').hidden = false; message.textContent = 'Signed out.'; };
 $('#ticket-token').oninput = () => { checkedToken = null; $('#admit').hidden = true; $('#ticket-result').replaceChildren(); };
 async function check(action) {
-  if (busy) return;
+  if (busy || !accessToken) return;
+  const sessionToken = accessToken;
   const token = $('#ticket-token').value.trim();
   if (action === 'admit' && token !== checkedToken) return;
   busy = true;
@@ -27,7 +64,8 @@ async function check(action) {
   $('#admit').hidden = true; $('#ticket-result').replaceChildren();
   message.textContent = 'Checking…';
   try {
-    const response = await fetch('/api/scanner', { method: 'POST', headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ticket: token }) });
+    const response = await fetch('/api/scanner', { method: 'POST', headers: { Authorization: 'Bearer ' + sessionToken, 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ticket: token }) });
+    if (sessionToken !== accessToken) return;
     const result = await response.json(); if (!response.ok) throw new Error(result.error);
     const outcomes = { valid: 'Valid ticket. Check identity, then confirm admission.', admitted: 'Admission recorded.', already_used: 'Already admitted today. Do not admit again.', wrong_day: 'Not valid for today. Do not admit.', invalid_or_revoked: 'Unpaid or revoked ticket. Do not admit.', unknown: 'Unknown ticket. Do not admit.' };
     message.textContent = result.status === 'test_ticket' ? 'Payment test ticket. Do not admit.' : outcomes[result.status] || 'Unable to verify. Do not admit.';
@@ -36,23 +74,67 @@ async function check(action) {
       const term = document.createElement('dt'), detail = document.createElement('dd'); term.textContent = label; detail.textContent = value; $('#ticket-result').append(term, detail);
     }
     checkedToken = token; $('#admit').hidden = result.status !== 'valid';
-  } catch (error) { message.textContent = error.message; checkedToken = null; }
+  } catch (error) {
+    if (sessionToken === accessToken) { message.textContent = error.message; checkedToken = null; }
+  }
   finally { busy = false; $('#ticket-token').disabled = false; }
 }
 $('#scan-form').onsubmit = event => { event.preventDefault(); stopCamera(); check('inspect'); };
 $('#admit').onclick = () => check('admit');
 $('#camera-stop').onclick = stopCamera;
 $('#camera-start').onclick = async () => {
-  if (!('BarcodeDetector' in window)) { message.textContent = 'Camera scanning is unavailable in this browser. Use a USB/Bluetooth QR reader or paste the decoded QR text.'; return; }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    message.textContent = 'Open this page over HTTPS in your phone browser, or choose a QR photo below.';
+    return;
+  }
+  stopCamera();
+  const session = cameraSession;
+  $('#camera-start').disabled = true;
+  $('#camera-stop').hidden = false;
+  message.textContent = 'Starting camera…';
   try {
-    stopCamera(); stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    const video = $('#camera'); video.srcObject = stream; video.hidden = false; $('#camera-stop').hidden = false; await video.play();
-    const detector = new BarcodeDetector({ formats: ['qr_code'] }); scanning = true;
-    while (scanning) {
-      const codes = await detector.detect(video);
-      if (codes.length) { $('#ticket-token').value = codes[0].rawValue; stopCamera(); await check('inspect'); break; }
+    const camera = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' } } });
+    if (session !== cameraSession) { camera.getTracks().forEach(track => track.stop()); return; }
+    stream = camera;
+    const video = $('#camera');
+    video.srcObject = stream;
+    video.hidden = false;
+    await video.play();
+    const decode = await loadDecoder();
+    if (session !== cameraSession) return;
+    scanning = true;
+    message.textContent = 'Hold the ticket QR inside the camera view.';
+    while (scanning && session === cameraSession) {
+      const code = video.readyState >= 2 && decodeFrame(decode, video, video.videoWidth, video.videoHeight, 720);
+      if (code) { $('#ticket-token').value = code; stopCamera(); await check('inspect'); break; }
       await new Promise(resolve => setTimeout(resolve, 200));
     }
-  } catch { stopCamera(); message.textContent = 'Camera unavailable. Allow camera access or use a QR reader.'; }
+  } catch {
+    if (session !== cameraSession) return;
+    stopCamera();
+    message.textContent = 'Camera scanning could not start. Allow camera access or choose a QR photo below.';
+  }
+};
+$('#qr-photo').onchange = async event => {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file || busy) return;
+  stopCamera();
+  const session = cameraSession;
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    const [decode] = await Promise.all([loadDecoder(), image.decode()]);
+    if (session !== cameraSession) return;
+    const code = decodeFrame(decode, image, image.naturalWidth, image.naturalHeight, 1600);
+    if (!code) throw new Error('QR not found');
+    $('#ticket-token').value = code;
+    await check('inspect');
+  } catch {
+    if (session === cameraSession) message.textContent = 'Could not read the QR. Try a clearer image or use manual verification.';
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 };
 window.addEventListener('pagehide', stopCamera);

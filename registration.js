@@ -156,7 +156,22 @@ form.addEventListener('submit', event => {
     fields.first = fields.first.trim();
     fields.last = fields.last.trim();
     participants.push(fields);
-    item.textContent = `${fields.first.trim()} ${fields.last.trim()} · +91 ${fields.mobile} · ${fields.email} · ${fields.dob} · ${fields.organization || "—"} · ${fields.city || "—"}`;
+    const name = document.createElement('strong');
+    name.textContent = `${fields.first} ${fields.last}`;
+    const details = document.createElement('dl');
+    for (const [label, value] of [
+      ['Mobile', `+91 ${fields.mobile}`], ['Email', fields.email],
+      ['Date of birth', fields.dob.split('-').reverse().join('/')],
+      ['College / organisation', fields.organization], ['City', fields.city],
+    ]) {
+      if (!value?.trim()) continue;
+      const term = document.createElement('dt');
+      const detail = document.createElement('dd');
+      term.textContent = label;
+      detail.textContent = value;
+      details.append(term, detail);
+    }
+    item.append(name, details);
     list.append(item);
   }
   const booking = { visit: form.elements.visit.value, participants,

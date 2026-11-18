@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 fs.mkdirSync('public', { recursive: true });
+fs.copyFileSync(require.resolve('jsqr'), 'public/qr-decoder.js');
 function copy(source, destination) {
   if (fs.statSync(source).isDirectory()) {
     fs.mkdirSync(destination, { recursive: true });

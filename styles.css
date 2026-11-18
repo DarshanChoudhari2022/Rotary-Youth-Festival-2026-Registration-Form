@@ -210,6 +210,44 @@ button, input { font-family: inherit; }
 #staff-login, #scan-form { display: grid; gap: 10px; margin: 24px 0; }
 #staff-login input, #scan-form input { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #8997a5; border-radius: 5px; font: inherit; }
 #scanner-message, #booking-message { padding: 14px; background: #f0f5f9; border-left: 3px solid #1d4d79; overflow-wrap: anywhere; }
+.scanner-page { min-height: 100vh; background: #f3f6fa; color: #14263d; }
+.scanner-page [hidden] { display: none !important; }
+.scanner-main { max-width: 620px; margin-inline: auto; padding: clamp(16px, 4vw, 32px); }
+.scanner-main h1 { margin: 0 0 6px; font-size: clamp(1.65rem, 5vw, 2.15rem); }
+.scanner-intro, .scanner-note, .scanner-card p { color: #44576b; }
+.scanner-card { background: #fff; border: 1px solid #dce4ed; border-radius: 14px; padding: clamp(14px, 4vw, 22px); margin-block: 14px; }
+.scanner-card h2 { margin: 0; font-size: 1.125rem; }
+.scanner-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.scanner-form { display: grid; gap: 8px; }
+.scanner-form input { width: 100%; min-width: 0; min-height: 46px; padding: 8px 12px; border: 1px solid #8698ac; border-radius: 8px; font: inherit; font-size: 1rem; }
+.scanner-form p { margin: 0; font-size: .875rem; }
+.scanner-main button { min-height: 44px; border-radius: 8px; }
+.scanner-main .scanner-primary { width: 100%; background: #123e63; color: #fff; }
+.scanner-main .scanner-secondary { background: #e8eef5; color: #123650; }
+.scanner-main video { display: block; width: 100%; max-height: 320px; object-fit: contain; margin-block: 12px; border-radius: 8px; background: #101d29; }
+.scanner-main label[for="qr-photo"] { display: block; margin-block: 14px 6px; }
+.scanner-main #qr-photo { max-width: 100%; font: inherit; }
+.scanner-main #ticket-result { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; background: #fff; border-radius: 10px; padding: 14px; }
+.scanner-main #ticket-result:empty { display: none; }
+.scanner-main #ticket-result dd { margin: 0; overflow-wrap: anywhere; }
+.scanner-note { font-size: .875rem; }
+#review { padding: clamp(16px, 4vw, 28px); }
+#review h2 { margin-block: 0 12px; }
+#review-total { background: #eef4fa; padding: 12px; border-radius: 8px; }
+#review-participants { padding-inline-start: 24px; }
+#review-participants li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+#review-participants dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 4px 12px; margin: 6px 0; font-size: .875rem; }
+#review-participants dt { color: #44576b; }
+#review-participants dd { margin: 0; overflow-wrap: anywhere; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-actions form { margin: 0; }
+#save-status:empty { display: none; }
+@media (max-width: 440px) {
+  .review-actions { flex-direction: column; }
+  .review-actions button { width: 100%; min-height: 44px; }
+  #review-participants dl { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  #review-participants dd { margin-bottom: 6px; }
+}
 #ticket-result dd { margin: 0 0 12px; overflow-wrap: anywhere; }
 #ticket-result dt { font-weight: 700; }
 #scan-panel button, #registration-receipt button { min-height: 44px; margin: 4px 8px 8px 0; }

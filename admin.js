@@ -10,6 +10,8 @@ let selected;
 let page = 0;
 let search = '';
 let loadVersion = 0;
+const bookingCurrency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' });
+const attendanceDate = new Intl.DateTimeFormat('en-IN', { dateStyle: 'full', timeZone: 'Asia/Kolkata' });
 
 function element(tag, text) {
   const node = document.createElement(tag);
@@ -91,7 +93,7 @@ function renderPerson(person) {
     : { '21': '21 November 2026', '22': '22 November 2026', both: '21–22 November 2026' }[person.visit];
   const age = [person.under_16_day_one && '21 Nov', person.under_16_day_two && '22 Nov'].filter(Boolean).join(', ');
   const ticket = person.ticket_id ? (person.revoked_at ? 'Revoked' : 'Active') : 'Not issued';
-  const amount = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(person.amount_paise / 100);
+  const amount = bookingCurrency.format(person.amount_paise / 100);
   const details = document.createElement('dl');
   for (const [label, value] of [
     ['Registration', person.booking_id], ['Visit', visit],
@@ -132,7 +134,7 @@ async function loadDashboard() {
   const days = result.days.map(day => {
     const card = document.createElement('article');
     card.className = 'panel';
-    const title = new Intl.DateTimeFormat('en-IN', { dateStyle: 'full', timeZone: 'Asia/Kolkata' }).format(new Date(day.day));
+    const title = attendanceDate.format(new Date(day.day));
     card.append(element('h3', title), element('p', `${day.registrations} registrations · ${day.participants} participants · ${day.under_16} under 16`),
       element('p', `${day.paid} active paid passes · ${day.paid_under_16} paid participants under 16`));
     return card;

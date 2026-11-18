@@ -16,6 +16,10 @@ const types = {
 
 http.createServer(async (req, res) => {
   const pathname = new URL(req.url, 'http://localhost').pathname;
+  if (pathname === '/qr-decoder.js') {
+    res.setHeader('Content-Type', types['.js']);
+    return fs.createReadStream(require.resolve('jsqr')).pipe(res);
+  }
   const handlers = { '/api/register': register, '/api/booking': require('./api/booking'), '/api/scanner': require('./api/scanner'), '/api/scanner-config': require('./api/scanner-config'), '/api/payment': require('./api/payment') };
   handlers['/api/admin'] = require('./api/admin');
   if (Object.hasOwn(handlers, pathname)) {
@@ -37,7 +41,7 @@ http.createServer(async (req, res) => {
     return handlers[pathname](req, res);
   }
 
-  const file = pathname === '/' ? 'index.html' : pathname.slice(1);
+  const file = pathname === '/' ? 'index.html' : pathname === '/admin' ? 'admin.html' : pathname.slice(1);
   const allowed = ['admin.html', 'admin.js', 'scanner.html', 'scanner.js', 'register.html', 'event.js', 'index.html', 'styles.css', 'registration.js', 'thank-you.html', 'thank-you.js', 'robots.txt', 'sitemap.xml'].includes(file)
     || /^policies\/[a-z]+\.html$/.test(file)
     || /^assets\/[a-z]+(?:-[a-z]+)*\.(?:png|webp|jpg)$/.test(file);

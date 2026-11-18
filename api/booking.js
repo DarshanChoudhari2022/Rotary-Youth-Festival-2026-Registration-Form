@@ -22,10 +22,30 @@ function ticketFont() {
 }
 
 function heading(doc, label) {
-  doc.rect(0, 0, doc.page.width, 112).fill('#14263D');
-  doc.fillColor('#FFFFFF').fontSize(26).text('Naya Bharat 2047', 48, 36);
-  doc.fontSize(11).text('Rotary & Rotaract District 3131');
-  doc.fillColor('#14263D').fontSize(19).text(label, 48, 142).moveDown(0.6);
+  const width = doc.page.width;
+  const logos = path.join(__dirname, '../assets/ticket-logos.png');
+  doc.image(logos, 48, 27, { width: width - 96 });
+  doc.rect(0, 107, width, 77).fill('#14263D');
+  doc.rect(0, 184, width / 2, 4).fill('#bd1451');
+  doc.rect(width / 2, 184, width / 2, 4).fill('#e87515');
+  doc.fillColor('#FFFFFF').fontSize(25).text('Naya Bharat 2047', 48, 120);
+  doc.fontSize(11).text('Rotary & Rotaract Youth Festival', 48, 154);
+  doc.fillColor('#14263D').fontSize(18).text(label, 48, 207).moveDown(0.45);
+}
+
+function bookedDate(doc, visit, isDemo) {
+  const top = doc.y;
+  const width = doc.page.width - 96;
+  const date = isDemo ? 'Demo only' : visit === 'both' ? '21–22 November 2026'
+    : visit === '21' ? '21 November 2026' : '22 November 2026';
+  const caption = isDemo ? 'Payment test. No festival admission.'
+    : visit === 'both' ? 'Saturday and Sunday' : visit === '21' ? 'Saturday' : 'Sunday';
+  doc.roundedRect(48, top, width, 76, 8).fill('#eef4fa');
+  doc.fillColor('#18568e').fontSize(10).text(isDemo ? 'TEST PASS' : 'BOOKED DATES', 61, top + 8);
+  doc.fillColor('#14263D').fontSize(24).text(date, 61, top + 23, { width: width - 26 });
+  doc.fillColor(isDemo ? '#9E1649' : '#526475').fontSize(10).text(caption, 61, top + 53);
+  doc.x = 48;
+  doc.y = top + 88;
 }
 
 function detail(doc, label, value) {
@@ -44,9 +64,11 @@ module.exports = async (req, res) => {
 // Callers must authorize access before invoking this function.
 async function sendBooking(res, id, action, ticketId) {
   try {
-    const [booking] = await db(`registrations?id=eq.${id}&select=id,visit,quantity,amount_paise,status,checkout_test`);
+    const [[booking], [payment]] = await Promise.all([
+      db(`registrations?id=eq.${id}&select=id,visit,quantity,amount_paise,status,checkout_test`),
+      db(`festival_payments?registration_id=eq.${id}&revoked_at=is.null`),
+    ]);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
-    const [payment] = await db(`festival_payments?registration_id=eq.${id}&revoked_at=is.null`);
     const paid = booking.status === 'paid' && payment?.amount_paise === booking.amount_paise;
     const isDemo = booking.checkout_test || booking.visit === 'demo';
     const visitLabel = isDemo ? 'Demo only - no event date'
@@ -54,9 +76,11 @@ async function sendBooking(res, id, action, ticketId) {
         : booking.visit === '21' ? 'Saturday, 21 November 2026' : 'Sunday, 22 November 2026';
     if (action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: enabled() && booking.status === 'pending' });
     if (!paid) return res.status(409).json({ error: 'Tickets are available only after verified payment.' });
-    const allTickets = await db(`festival_tickets?registration_id=eq.${id}&order=position`);
+    const [allTickets, people] = await Promise.all([
+      db(`festival_tickets?registration_id=eq.${id}&order=position`),
+      db(`registration_participants?registration_id=eq.${id}&order=position`),
+    ]);
     const tickets = allTickets.filter(ticket => !ticket.revoked_at && (!ticketId || ticket.id === ticketId));
-    const people = await db(`registration_participants?registration_id=eq.${id}&order=position`);
     if (allTickets.length !== booking.quantity || !tickets.length) return res.status(409).json({ error: 'Tickets are unavailable. Please contact event support.' });
     const doc = new PDFDocument({ size: 'A4', margin: 48, font: ticketFont(), autoFirstPage: !ticketId });
     const chunks = [];
@@ -77,14 +101,13 @@ async function sendBooking(res, id, action, ticketId) {
       const person = people.find(p => p.position === ticket.position);
       doc.addPage();
       heading(doc, isDemo ? 'Demo ticket' : 'Participant entry ticket');
-      if (isDemo) doc.fillColor('#9E1649').fontSize(11).text('PAYMENT TEST - NOT VALID FOR EVENT ADMISSION').moveDown();
+      bookedDate(doc, booking.visit, isDemo);
       detail(doc, 'Participant', `${person.first_name} ${person.last_name}`);
       detail(doc, 'Mobile', person.mobile || 'Unavailable');
       detail(doc, 'Email', person.email || 'Unavailable');
       detail(doc, isDemo ? 'Age on payment date' : 'Age on first booked day', participantAge(person.date_of_birth, ageDate));
       if (person.organization) detail(doc, 'College / organisation', person.organization);
       if (person.city) detail(doc, 'City', person.city);
-      detail(doc, 'Booked dates', visitLabel);
       if (!isDemo) detail(doc, 'Venue', 'Fergusson College, Pune');
       detail(doc, 'Registration / ticket ID', `${id} / ${ticket.id}`);
       const qrImage = await QRCode.toBuffer(qr(ticket.id), { width: 300, errorCorrectionLevel: 'M' });
