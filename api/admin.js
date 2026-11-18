@@ -1,4 +1,5 @@
 const { db } = require('../lib/tickets');
+const { sendBooking } = require('./booking');
 
 const uuid = /^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i;
 const rpc = (name, payload) => db('rpc/' + name, { method: 'POST', body: JSON.stringify(payload) });
@@ -24,6 +25,10 @@ module.exports = async (req, res) => {
       const page = Number.isSafeInteger(body.page) && body.page >= 0 ? body.page : 0;
       const find = typeof body.find === 'string' ? body.find.trim().slice(0, 64) : '';
       return res.json(await rpc('festival_admin_dashboard', { p_page: page, p_find: find }));
+    }
+    if (body?.action === 'download' && /^RYF26-[A-F0-9]{8}$/.test(body.booking_id || '')
+        && typeof body.ticket_id === 'string' && uuid.test(body.ticket_id)) {
+      return sendBooking(res, body.booking_id, 'download', body.ticket_id);
     }
     if (body?.action === 'edit') {
       const fields = ['first_name', 'last_name', 'organization', 'city'].map(name =>

@@ -38,6 +38,11 @@ module.exports = async (req, res) => {
   let body, id;
   try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; id = authorize(body?.access); }
   catch { return res.status(401).json({ error: 'Booking access is missing or expired. Contact support with your registration ID.' }); }
+  return sendBooking(res, id, body.action);
+};
+
+// Callers must authorize access before invoking this function.
+async function sendBooking(res, id, action, ticketId) {
   try {
     const [booking] = await db(`registrations?id=eq.${id}&select=id,visit,quantity,amount_paise,status,checkout_test`);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
@@ -47,23 +52,25 @@ module.exports = async (req, res) => {
     const visitLabel = isDemo ? 'Demo only - no event date'
       : booking.visit === 'both' ? 'Saturday, 21 November and Sunday, 22 November 2026'
         : booking.visit === '21' ? 'Saturday, 21 November 2026' : 'Sunday, 22 November 2026';
-    if (body.action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: enabled() && booking.status === 'pending' });
+    if (action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: enabled() && booking.status === 'pending' });
     if (!paid) return res.status(409).json({ error: 'Tickets are available only after verified payment.' });
     const allTickets = await db(`festival_tickets?registration_id=eq.${id}&order=position`);
-    const tickets = allTickets.filter(ticket => !ticket.revoked_at);
+    const tickets = allTickets.filter(ticket => !ticket.revoked_at && (!ticketId || ticket.id === ticketId));
     const people = await db(`registration_participants?registration_id=eq.${id}&order=position`);
     if (allTickets.length !== booking.quantity || !tickets.length) return res.status(409).json({ error: 'Tickets are unavailable. Please contact event support.' });
-    const doc = new PDFDocument({ size: 'A4', margin: 48, font: ticketFont() });
+    const doc = new PDFDocument({ size: 'A4', margin: 48, font: ticketFont(), autoFirstPage: !ticketId });
     const chunks = [];
     const completed = new Promise((resolve, reject) => { doc.on('data', c => chunks.push(c)); doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject); });
-    heading(doc, 'Payment acknowledgement');
-    detail(doc, 'Registration', id);
-    detail(doc, 'Amount paid', `INR ${(booking.amount_paise / 100).toFixed(2)}`);
-    detail(doc, 'Ticket coverage', visitLabel);
-    detail(doc, 'Participants', String(booking.quantity));
-    detail(doc, 'Payment reference', payment.transaction_id);
-    detail(doc, 'Verified at', payment.verified_at);
-    doc.text('This is a payment acknowledgement, not a GST tax invoice.');
+    if (!ticketId) {
+      heading(doc, 'Payment acknowledgement');
+      detail(doc, 'Registration', id);
+      detail(doc, 'Amount paid', `INR ${(booking.amount_paise / 100).toFixed(2)}`);
+      detail(doc, 'Ticket coverage', visitLabel);
+      detail(doc, 'Participants', String(booking.quantity));
+      detail(doc, 'Payment reference', payment.transaction_id);
+      detail(doc, 'Verified at', payment.verified_at);
+      doc.text('This is a payment acknowledgement, not a GST tax invoice.');
+    }
     const ageDate = isDemo ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(payment.verified_at))
       : booking.visit === '22' ? '2026-11-22' : '2026-11-21';
     for (const ticket of tickets) {
@@ -93,7 +100,9 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${id}-tickets.pdf"`);
     return res.end(pdf);
   } catch (error) {
-    console.error('Booking request failed', { action: body?.action === 'download' ? 'download' : 'status', type: error.name, code: error.code });
+    console.error('Booking request failed', { action: action === 'download' ? 'download' : 'status', type: error.name, code: error.code });
     return res.status(503).json({ error: 'Could not prepare your booking details. Please retry. If payment is verified, do not pay again.' });
   }
-};
+}
+
+module.exports.sendBooking = sendBooking;

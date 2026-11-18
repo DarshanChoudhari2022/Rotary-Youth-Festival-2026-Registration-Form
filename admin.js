@@ -33,10 +33,35 @@ async function adminRequest(data) {
   const response = await fetch('/api/admin', { method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session },
     body: JSON.stringify(data), signal: AbortSignal.timeout(15000) });
-  const result = await response.json();
   if ([401, 403].includes(response.status)) signOut();
+  if (response.ok && data.action === 'download' && response.headers.get('Content-Type')?.startsWith('application/pdf')) {
+    return response.blob();
+  }
+  const result = await response.json();
   if (!response.ok) throw new Error(result.error);
+  if (data.action === 'download') throw new Error('The ticket PDF could not be downloaded.');
   return result;
+}
+
+async function downloadTicket(person, button) {
+  button.disabled = true;
+  message.textContent = 'Preparing ticket…';
+  try {
+    const pdf = await adminRequest({ action: 'download', booking_id: person.booking_id, ticket_id: person.ticket_id });
+    const url = URL.createObjectURL(pdf);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${person.booking_id}-participant-${person.position}.pdf`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    message.textContent = 'Ticket download started.';
+  } catch (error) {
+    message.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function openEditor(person) {
@@ -72,6 +97,12 @@ function renderPerson(person) {
   editButton.addEventListener('click', () => openEditor(person));
   actions.append(editButton);
   if (person.ticket_id && !person.revoked_at) {
+    if (person.status === 'paid') {
+      const download = element('button', 'Download ticket');
+      download.type = 'button';
+      download.addEventListener('click', () => downloadTicket(person, download));
+      actions.append(download);
+    }
     const revoke = element('button', 'Revoke');
     revoke.type = 'button';
     revoke.addEventListener('click', () => revokeTicket(person, revoke));
