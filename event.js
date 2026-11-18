@@ -29,10 +29,11 @@ const offerSlide = document.querySelector('#festival-offer-slide');
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const hover = window.matchMedia('(hover: hover)');
 let heroTimer;
+let heroInView = true;
 
 function scheduleHero() {
   clearTimeout(heroTimer);
-  if (!motion.matches && !document.hidden && !hero.contains(document.activeElement)
+  if (heroInView && !motion.matches && !document.hidden && !hero.contains(document.activeElement)
       && !(hover.matches && hero.matches(':hover'))) {
     heroTimer = setTimeout(toggleHero, 5000);
   }
@@ -54,6 +55,12 @@ hero.addEventListener('mouseenter', scheduleHero);
 hero.addEventListener('mouseleave', scheduleHero);
 document.addEventListener('visibilitychange', scheduleHero);
 motion.addEventListener('change', scheduleHero);
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(([entry]) => {
+    heroInView = entry.isIntersecting;
+    scheduleHero();
+  }).observe(hero);
+}
 scheduleHero();
 
 for (const button of document.querySelectorAll('[data-section]')) {

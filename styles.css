@@ -324,6 +324,10 @@ button, input { font-family: inherit; }
 .event-tabs button { min-height: 44px; }
 #booking .panel, .policy .panel { border-radius: 8px; }
 @media (max-width: 640px) {
+  .festival-hero[data-slide="offer"] .countdown-banner { position: absolute; inset: 0; }
+  .festival-hero[data-slide="offer"] .festival-hero-poster { position: relative; display: block; padding: 0; }
+  .festival-hero[data-slide="offer"] .festival-hero-poster img { height: auto; }
+  .festival-hero[data-slide="offer"] + .event-card { margin-top: 12px; }
   .event-header .brandline { padding-block: 12px; gap: 0; }
   .event-card { padding: 6px 12px 12px; }
   .event-layout { gap: 20px; }
