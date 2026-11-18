@@ -35,3 +35,11 @@ The after-only mixed run submitted 90 concurrent local HTTP requests and returne
 | Gate admission and repeat scans | 278 ms | 284 ms | 284 ms |
 
 The gate missed the 100 ms target in this burst. The fixture uses embedded PostgreSQL and simulated authentication. k6 is unavailable locally, and the payment scenario requires a simulator or authorized sandbox. Sustained staged before-and-after results are pending.
+
+## Payment recovery worker
+
+Apply migration 202611190017. Configure a scheduler to send GET /api/payment-recovery with Authorization: Bearer followed by the server-only CRON_SECRET. Run it against the simulated gateway first. Match schedule frequency and FESTIVAL_PAYMENT_RECOVERY_BATCH (default 4, maximum 16) to the merchant lookup quota and expected payment rate. The worker claims attempts from PostgreSQL, so an interrupted browser session does not prevent later recovery. A lease expires after two minutes if a worker stops mid-run.
+
+After validating that the scheduler runs regularly, optionally set FESTIVAL_ASYNC_PAYMENT_RETURN=true. The hosted browser return then records a reconciliation signal before issuing the existing 303 redirect. The customer can still use the existing verification action for immediate status. Browser payload status and amounts are ignored. Only Easebuzz's transaction lookup and the payment-fulfillment SQL function can settle the booking.
+
+Review worker verification errors and unresolved pending rows where recovery_exhausted_at is set. These rows have completed 24 attempts. Compare with the provider record before any manual action. To roll back asynchronous returns, unset FESTIVAL_ASYNC_PAYMENT_RETURN. Disabling the scheduler stops background checks. Existing checkout and manual verification remain available.

@@ -39,3 +39,23 @@ test('a callback cannot issue tickets until Easebuzz confirms the matching payme
     p_registration: booking.id, p_transaction: 'payment-ref', p_amount: 20000,
   }]);
 });
+
+test('async payment return persists a signal before redirecting', async t => {
+  const txnid = 'c'.repeat(24);
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.ok(new URL(url).pathname.endsWith('/festival_signal_payment'));
+    assert.deepEqual(JSON.parse(options.body), { p_txnid: txnid });
+    return Response.json(true);
+  });
+  process.env.FESTIVAL_ASYNC_PAYMENT_RETURN = 'true';
+  process.env.CRON_SECRET = 'fixture-secret';
+  try {
+    const res = { setHeader(key, value) { this[key] = value; }, status(code) { this.code = code; return this; }, end() {} };
+    await paymentHandler({ method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'txnid=' + txnid }, res);
+    assert.equal(res.code, 303);
+    assert.equal(res.Location, '/thank-you.html');
+  } finally {
+    delete process.env.FESTIVAL_ASYNC_PAYMENT_RETURN;
+    delete process.env.CRON_SECRET;
+  }
+});

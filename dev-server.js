@@ -22,6 +22,7 @@ http.createServer(async (req, res) => {
   }
   const handlers = { '/api/register': register, '/api/booking': require('./api/booking'), '/api/scanner': require('./api/scanner'), '/api/scanner-config': require('./api/scanner-config'), '/api/payment': require('./api/payment') };
   handlers['/api/admin'] = require('./api/admin');
+  handlers['/api/payment-recovery'] = require('./api/payment-recovery');
   if (Object.hasOwn(handlers, pathname)) {
     if (fs.existsSync('.env.local')) process.loadEnvFile('.env.local');
     let body = '';

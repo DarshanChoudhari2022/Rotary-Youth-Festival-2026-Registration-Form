@@ -1,5 +1,6 @@
 const { timedHandler } = require('../lib/performance');
 const { randomBytes } = require('node:crypto');
+const { rpc } = require('../lib/staff');
 const { authorize, db } = require('../lib/tickets');
 const { enabled, initiate, reconcile, checkoutUrl, transactionPattern } = require('../lib/easebuzz');
 
@@ -16,6 +17,12 @@ module.exports = timedHandler('payment', async (req, res) => {
       ? new URLSearchParams(String(req.body)).get('txnid') : req.body?.txnid;
     if (typeof txnid !== 'string' || !transactionPattern.test(txnid)) return res.status(400).json({ error: 'Invalid payment reference.' });
     try {
+      if (process.env.FESTIVAL_ASYNC_PAYMENT_RETURN === 'true' && process.env.CRON_SECRET) {
+        const known = await rpc('festival_signal_payment', { p_txnid: txnid });
+        if (!known) return res.status(404).json({ error: 'Unknown payment reference.' });
+        res.setHeader('Location', '/thank-you.html');
+        return res.status(303).end();
+      }
       const [attempt] = await db(`${attemptTable}?txnid=eq.${txnid}&select=registration_id,txnid`);
       if (!attempt) return res.status(404).json({ error: 'Unknown payment reference.' });
       const booking = await loadBooking(attempt.registration_id);
