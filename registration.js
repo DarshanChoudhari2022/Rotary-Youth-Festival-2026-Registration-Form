@@ -213,10 +213,29 @@ save.addEventListener('click', async () => {
     renderSaveStatus();
     try {
       sessionStorage.setItem('festival-registration', JSON.stringify(result));
-      window.location.assign('/thank-you.html');
     } catch {
       // Keep the registration ID visible if session storage is unavailable.
+      return;
     }
+    let destination = '/thank-you.html';
+    if (result.access && result.status === 'pending') {
+      saveStatus.textContent = 'Registration saved. Opening Easebuzz checkout…';
+      try {
+        const checkout = await fetch('/api/payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access: result.access, action: 'start' }),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (checkout.ok) {
+          const { checkout_url: url } = await checkout.json();
+          if (typeof url === 'string' && /^https:\/\/pay\.easebuzz\.in\/pay\/[A-Za-z0-9_-]+$/.test(url)) destination = url;
+        }
+      } catch {
+        // The saved booking remains available for resuming payment.
+      }
+    }
+    window.location.assign(destination);
   } catch {
     saveStatus.textContent = 'Registration could not be verified. Please retry.';
   } finally {
