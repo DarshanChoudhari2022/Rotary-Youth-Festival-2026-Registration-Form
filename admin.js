@@ -29,6 +29,9 @@ function signOut() {
   byId('admin-daily-attendance').hidden = true;
   byId('attendance-cards').replaceChildren();
   byId('attendance-metrics').replaceChildren();
+  clearTimeout(searchTimer);
+  byId('admin-breakdown').open = false;
+  byId('admin-operations').open = false;
   ++loadVersion;
   listRequest?.abort();
   if (edit.open) edit.close();
@@ -131,7 +134,7 @@ function renderPerson(person) {
   return row;
 }
 
-async function loadDashboard(includeDays = true) {
+async function loadDashboard() {
   const version = ++loadVersion;
   listRequest?.abort();
   const controller = new AbortController();
@@ -144,7 +147,7 @@ async function loadDashboard(includeDays = true) {
   message.textContent = 'Loading registrations…';
   let result;
   try {
-    result = await adminRequest({ action: 'list', page, find: search, includeDays }, controller.signal);
+    result = await adminRequest({ action: 'list', page, find: search, includeDays: false }, controller.signal);
   } catch (error) {
     if (version !== loadVersion) {
       if (!session && ['Sign in again.', 'This account does not have festival admin access.'].includes(error.message)) showError(error);
@@ -158,15 +161,6 @@ async function loadDashboard(includeDays = true) {
     if (version === loadVersion) byId('admin-results').removeAttribute('aria-busy');
   }
   if (version !== loadVersion) return;
-  const days = (result.days ?? []).map(day => {
-    const card = document.createElement('article');
-    card.className = 'panel';
-    const title = attendanceDate.format(new Date(day.day));
-    card.append(element('h3', title), element('p', `${day.registrations} registrations · ${day.participants} participants · ${day.under_16} under 16`),
-      element('p', `${day.paid} active paid passes · ${day.paid_under_16} paid participants under 16`));
-    return card;
-  });
-  if (includeDays) byId('admin-days').replaceChildren(...days);
   byId('admin-results').replaceChildren(...result.participants.slice(0, 25).map(renderPerson));
   byId('admin-empty').hidden = result.participants.length > 0;
   byId('admin-previous').disabled = page === 0;
@@ -178,6 +172,31 @@ async function loadDashboard(includeDays = true) {
     ? `Showing ${Math.min(25, result.participants.length)} matches on this page.` : '';
 }
 
+
+const breakdown = byId('admin-breakdown');
+async function loadBreakdown() {
+  const status = byId('breakdown-status');
+  status.textContent = 'Loading registration totals…';
+  try {
+    const result = await adminRequest({ action: 'registration_breakdown' });
+  const days = (result ?? []).map(day => {
+    const card = document.createElement('article');
+    card.className = 'panel';
+    const title = attendanceDate.format(new Date(day.day));
+    card.append(element('h3', title), element('p', `${day.registrations} registrations · ${day.participants} participants · ${day.under_16} under 16`),
+      element('p', `${day.paid} active paid passes · ${day.paid_under_16} paid participants under 16`));
+    return card;
+  });
+  byId('admin-days').replaceChildren(...days);
+
+    status.textContent = '';
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+breakdown.ontoggle = () => { if (session && breakdown.open) loadBreakdown(); };
+
+let searchTimer;
 function showError(error) { message.textContent = error.message; }
 fetch('/api/scanner-config').then(response => response.json()).then(result => {
   config = result;
@@ -214,25 +233,32 @@ login.addEventListener('submit', async event => {
     search = '';
     byId('admin-find').value = '';
     await loadDashboard();
-    if (role === 'super') loadOperations();
+
   } catch (error) { showError(error); }
   finally { byId('admin-password').value = ''; button.disabled = false; }
 });
 byId('admin-sign-out').onclick = () => { signOut(); message.textContent = 'Signed out.'; };
 byId('admin-search').onsubmit = event => {
   event.preventDefault();
+  clearTimeout(searchTimer);
   search = byId('admin-find').value.trim();
   page = 0;
-  loadDashboard(!byId('admin-days').childElementCount).catch(showError);
+  loadDashboard().catch(showError);
+};
+byId('admin-find').oninput = event => {
+  clearTimeout(searchTimer);
+  if (event.isComposing) return;
+  searchTimer = setTimeout(() => byId('admin-search').requestSubmit(), 350);
 };
 byId('admin-clear').onclick = () => {
+  clearTimeout(searchTimer);
   byId('admin-find').value = '';
   search = '';
   page = 0;
-  loadDashboard(!byId('admin-days').childElementCount).catch(showError);
+  loadDashboard().catch(showError);
 };
-byId('admin-previous').onclick = () => { page = Math.max(0, page - 1); loadDashboard(false).catch(showError); };
-byId('admin-next').onclick = () => { page += 1; loadDashboard(false).catch(showError); };
+byId('admin-previous').onclick = () => { page = Math.max(0, page - 1); loadDashboard().catch(showError); };
+byId('admin-next').onclick = () => { page += 1; loadDashboard().catch(showError); };
 byId('admin-cancel').onclick = () => edit.close();
 editForm.onsubmit = async event => {
   event.preventDefault();
@@ -293,7 +319,7 @@ spotForm.onsubmit = async event => {
     loadDashboard().catch(showError);
     if (role === 'super') {
       refreshAttendance();
-      loadOperations();
+      if (byId('admin-operations').open) loadOperations();
     }
   } catch (error) {
     byId('spot-message').textContent = error.message;
@@ -342,13 +368,13 @@ async function refreshAttendance() {
       return card;
     });
     byId('attendance-cards').replaceChildren(...cards);
-    status.textContent = `Updated ${attendanceUpdated.format(new Date())} IST · refreshes every 5 seconds`;
+    status.textContent = `Updated ${attendanceUpdated.format(new Date())} IST · refreshes automatically`;
   } catch {
     if (session === currentSession) status.textContent = 'Attendance update unavailable. Retrying shortly…';
   } finally {
     if (attendanceRequest === currentSession) attendanceRequest = null;
     if (role === 'super' && session === currentSession && !document.hidden) {
-      attendanceTimer = setTimeout(refreshAttendance, 5000);
+      attendanceTimer = setTimeout(refreshAttendance, 5000 + Math.random() * 3000);
     }
   }
 }
@@ -410,6 +436,10 @@ async function loadOperations() {
   finally { refresh.disabled = false; }
 }
 
+byId('admin-operations').ontoggle = () => {
+  if (byId('admin-operations').open) loadOperations();
+};
+byId('operations-link').onclick = () => { byId('admin-operations').open = true; };
 byId('admin-report-refresh').onclick = loadOperations;
 byId('admin-staff-form').onsubmit = async event => {
   event.preventDefault();

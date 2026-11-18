@@ -1,3 +1,4 @@
+const { integerSetting } = require('../lib/performance');
 const { db } = require('../lib/tickets');
 const { sendBooking } = require('./booking');
 const { uuid, staffRoles, rpc, staffFor, inAllowlist } = require('../lib/staff');
@@ -20,7 +21,10 @@ module.exports = async (req, res) => {
     catch { return res.status(400).json({ error: 'Invalid request.' }); }
     if (body?.action === 'session') return res.json({ role });
     if (body?.action === 'daily_attendance' && role === 'super') {
-      return res.json(await rpc('festival_daily_attendance'));
+      const ttl = integerSetting('FESTIVAL_ATTENDANCE_TTL_SECONDS', 0, 0, 60);
+      return res.json(ttl
+        ? await rpc('festival_attendance_snapshot', { p_ttl_seconds: ttl })
+        : await rpc('festival_daily_attendance'));
     }
     if (body?.action === 'spot' && ['super', 'registration'].includes(role)) {
       const name = string(body.name).replace(/\s+/gu, ' ');
@@ -74,6 +78,10 @@ module.exports = async (req, res) => {
       if (!uuid.test(user.id)) throw new Error('Missing staff account ID.');
       await db('festival_staff', { method: 'POST', body: JSON.stringify({ id: user.id, name, email, role: body.role }) });
       return res.json({ ok: true });
+    }
+    if (body?.action === 'registration_breakdown') {
+      const result = await rpc('festival_admin_dashboard', { p_page: 0, p_find: '', p_include_days: true });
+      return res.json(result.days);
     }
     if (body?.action === 'list') {
       if (body.page != null && (!Number.isSafeInteger(body.page) || body.page < 0 || body.page > 1000)) {

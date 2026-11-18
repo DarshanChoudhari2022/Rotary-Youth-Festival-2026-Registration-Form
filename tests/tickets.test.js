@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 const { PGlite } = require('@electric-sql/pglite');
+const { pg_trgm } = require('@electric-sql/pglite/contrib/pg_trgm');
 process.env.TICKET_SIGNING_SECRET = 'test-only-'.repeat(10);
 const { access, authorize, qr, verifyQr } = require('../lib/tickets');
 test('booking capability rejects edits, expired access and entry tokens', () => {
@@ -19,7 +20,7 @@ test('QR is stable, unique, and cannot be altered', () => {
  assert.throws(() => verifyQr(token.slice(0, -1) + '!'));
 });
 test('database fulfillment and admission invariants', async () => {
- const db = new PGlite();
+ const db = new PGlite({ extensions: { pg_trgm } });
  try {
   await db.exec('create role anon; create role authenticated; create role service_role;');
   for (const file of fs.readdirSync('supabase/migrations').sort()) await db.exec(fs.readFileSync('supabase/migrations/' + file, 'utf8'));
