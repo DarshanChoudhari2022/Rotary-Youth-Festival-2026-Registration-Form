@@ -1,3 +1,4 @@
+const { timedHandler } = require('../lib/performance');
 const { authorize, db, qr } = require('../lib/tickets');
 const { enabled } = require('../lib/easebuzz');
 const PDFDocument = require('pdfkit');
@@ -52,14 +53,14 @@ function detail(doc, label, value) {
   doc.fillColor('#526475').fontSize(9).text(label);
   doc.fillColor('#14263D').fontSize(12).text(value).moveDown(0.45);
 }
-module.exports = async (req, res) => {
+module.exports = timedHandler('booking', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
   let body, id;
   try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; id = authorize(body?.access); }
   catch { return res.status(401).json({ error: 'Booking access is missing or expired. Contact support with your registration ID.' }); }
   return sendBooking(res, id, body.action);
-};
+});
 
 // Callers must authorize access before invoking this function.
 async function sendBooking(res, id, action, ticketId) {

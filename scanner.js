@@ -85,7 +85,11 @@ async function check() {
       const term = document.createElement('dt'), detail = document.createElement('dd'); term.textContent = label; detail.textContent = value; $('#ticket-result').append(term, detail);
     }
   } catch (error) {
-    if (sessionToken === accessToken) message.textContent = error.message;
+    if (sessionToken === accessToken) {
+      message.textContent = ['TimeoutError', 'TypeError', 'AbortError'].includes(error.name)
+        ? 'Connection interrupted. Scan the same ticket again before admitting. A completed check-in will show its original time.'
+        : error.message;
+    }
   }
   finally { busy = false; $('#ticket-token').disabled = false; }
 }

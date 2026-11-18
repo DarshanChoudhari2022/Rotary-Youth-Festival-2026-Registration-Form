@@ -1,3 +1,5 @@
+const { timedHandler } = require('../lib/performance');
+const { timedFetch } = require('../lib/performance');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FIRST_VISIT = { 21: '2026-11-21', 22: '2026-11-22', both: '2026-11-21', demo: '2026-11-21' };
 
@@ -54,7 +56,7 @@ function validate(body) {
     p_guardian_consent: hasMinor };
 }
 
-module.exports = async function register(req, res) {
+module.exports = timedHandler('register', async function register(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -77,7 +79,7 @@ module.exports = async function register(req, res) {
   }
 
   try {
-    const result = await fetch(new URL('/rest/v1/rpc/create_festival_registration', SUPABASE_URL), {
+    const result = await timedFetch('database', new URL('/rest/v1/rpc/create_festival_registration', SUPABASE_URL), {
       method: 'POST',
       headers: { apikey: SUPABASE_SECRET_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -105,4 +107,4 @@ module.exports = async function register(req, res) {
   } catch {
     return res.status(503).json({ error: 'We could not verify that your booking was saved. Please retry.' });
   }
-};
+});

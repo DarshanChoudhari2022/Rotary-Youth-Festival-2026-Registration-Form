@@ -51,9 +51,8 @@ test('database fulfillment and admission invariants', async () => {
   const staff = crypto.randomUUID();
   assert.equal((await db.query('select inspect_festival_ticket($1,$2,true) result',[tickets[0].id,staff])).rows[0].result.status,'wrong_day');
   // Simulate event date only in isolated test database, never production.
-  const sql = fs.readFileSync('supabase/migrations/202611150004_tickets.sql','utf8');
-  const func = sql.slice(sql.indexOf('create function public.inspect_festival_ticket'),sql.indexOf('revoke all on function'));
-  await db.exec(func.replace('create function','create or replace function').replace("(now() at time zone 'Asia/Kolkata')::date", "'2026-11-21'::date"));
+  const sql = fs.readFileSync('supabase/migrations/202611190016_scanner_lookup.sql','utf8');
+  await db.exec(sql.replace("(statement_timestamp() at time zone 'Asia/Kolkata')::date", "'2026-11-21'::date"));
   const inspect = async admit => (await db.query('select inspect_festival_ticket($1,$2,$3) result',[tickets[0].id,staff,admit])).rows[0].result;
   assert.equal((await inspect(false)).status,'valid');
   assert.equal((await inspect(true)).status,'admitted');

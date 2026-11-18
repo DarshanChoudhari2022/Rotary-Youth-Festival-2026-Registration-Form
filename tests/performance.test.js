@@ -32,3 +32,21 @@ test('attendance snapshots share a refresh and expire after the configured TTL',
     await db.close();
   }
 });
+
+test('timed handlers log dependency counts without logging request data', async t => {
+  const { timedHandler, timedFetch } = require('../lib/performance');
+  const logs = t.mock.method(console, 'info', () => {});
+  t.mock.method(globalThis, 'fetch', async () => new Response('{}'));
+  const previous = process.env.FESTIVAL_PERFORMANCE_LOG_PERCENT;
+  process.env.FESTIVAL_PERFORMANCE_LOG_PERCENT = '100';
+  try {
+    const handler = timedHandler('test', async () => timedFetch('database', 'https://example.test/private-token'));
+    await handler({ body: { password: 'private-password' } }, { statusCode: 200 });
+    const record = logs.mock.calls[0].arguments[1];
+    assert.equal(record.databaseCalls, 1);
+    assert.doesNotMatch(JSON.stringify(record), /private-token|private-password/);
+  } finally {
+    if (previous === undefined) delete process.env.FESTIVAL_PERFORMANCE_LOG_PERCENT;
+    else process.env.FESTIVAL_PERFORMANCE_LOG_PERCENT = previous;
+  }
+});

@@ -1,3 +1,4 @@
+const { timedHandler } = require('../lib/performance');
 const { randomBytes } = require('node:crypto');
 const { authorize, db } = require('../lib/tickets');
 const { enabled, initiate, reconcile, checkoutUrl, transactionPattern } = require('../lib/easebuzz');
@@ -5,7 +6,7 @@ const { enabled, initiate, reconcile, checkoutUrl, transactionPattern } = requir
 const attemptTable = 'festival_payment_attempts';
 const loadBooking = async id => (await db(`registrations?id=eq.${id}&select=id,amount_paise,status`))[0];
 
-module.exports = async (req, res) => {
+module.exports = timedHandler('payment', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (!enabled()) return res.status(503).json({ error: 'Online payment is not available yet.' });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
@@ -15,7 +16,7 @@ module.exports = async (req, res) => {
       ? new URLSearchParams(String(req.body)).get('txnid') : req.body?.txnid;
     if (typeof txnid !== 'string' || !transactionPattern.test(txnid)) return res.status(400).json({ error: 'Invalid payment reference.' });
     try {
-      const [attempt] = await db(`${attemptTable}?txnid=eq.${txnid}`);
+      const [attempt] = await db(`${attemptTable}?txnid=eq.${txnid}&select=registration_id,txnid`);
       if (!attempt) return res.status(404).json({ error: 'Unknown payment reference.' });
       const booking = await loadBooking(attempt.registration_id);
       // Treat the browser return only as a signal. The authenticated lookup decides payment status.
@@ -39,7 +40,7 @@ module.exports = async (req, res) => {
     const filter = `${attemptTable}?registration_id=eq.${id}`;
     const [booking, [existing], [person]] = await Promise.all([
       loadBooking(id),
-      db(filter),
+      db(filter + '&select=txnid,checkout_key'),
       body.action === 'start'
         ? db(`registration_participants?registration_id=eq.${id}&position=eq.1&select=first_name,email,mobile`)
         : [],
@@ -70,4 +71,4 @@ module.exports = async (req, res) => {
   } catch {
     return res.status(503).json({ error: 'Payment status could not be confirmed. Check your booking before paying again.' });
   }
-};
+});

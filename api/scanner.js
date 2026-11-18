@@ -1,6 +1,7 @@
+const { timedHandler } = require('../lib/performance');
 const { verifyQr } = require('../lib/tickets');
 const { staffFor, rpc } = require('../lib/staff');
-module.exports = async (req, res) => {
+module.exports = timedHandler('scanner', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
   try {
@@ -16,4 +17,4 @@ module.exports = async (req, res) => {
     catch { return res.status(400).json({ error: 'Invalid or altered ticket QR.' }); }
     return res.json(await rpc('inspect_festival_ticket', { p_ticket: ticket, p_staff: staff.id, p_admit: body.action === 'admit' }));
   } catch { return res.status(503).json({ error: 'Verification unavailable. Do not admit without verification; contact the gate supervisor.' }); }
-};
+});

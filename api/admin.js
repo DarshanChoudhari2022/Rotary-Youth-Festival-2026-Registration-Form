@@ -1,3 +1,5 @@
+const { timedHandler } = require('../lib/performance');
+const { timedFetch } = require('../lib/performance');
 const { integerSetting } = require('../lib/performance');
 const { db } = require('../lib/tickets');
 const { sendBooking } = require('./booking');
@@ -5,7 +7,7 @@ const { uuid, staffRoles, rpc, staffFor, inAllowlist } = require('../lib/staff')
 const string = value => typeof value === 'string' ? value.trim() : '';
 const emailPattern = /^[^\s@]+@[^\s@]+$/;
 
-module.exports = async (req, res) => {
+module.exports = timedHandler('admin', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
   if (!/^Bearer \S+$/.test(req.headers.authorization || '')) return res.status(401).json({ error: 'Sign in first.' });
@@ -69,7 +71,7 @@ module.exports = async (req, res) => {
       }
       const url = new URL('/auth/v1/admin/users', process.env.SUPABASE_URL);
       const headers = { apikey: process.env.SUPABASE_SECRET_KEY, 'Content-Type': 'application/json' };
-      const response = await fetch(url, { method: 'POST', headers, signal: AbortSignal.timeout(8000),
+      const response = await timedFetch('auth', url, { method: 'POST', headers, signal: AbortSignal.timeout(8000),
         body: JSON.stringify({ email, password, email_confirm: true }) });
       if (!response.ok) {
         return res.status(response.status < 500 ? 409 : 503).json({ error: 'Could not create this sign-in. Check whether the email already has an account.' });
@@ -113,4 +115,4 @@ module.exports = async (req, res) => {
     if (['PT409', 'PT422'].includes(error.code)) return res.status(Number(error.code.slice(2))).json({ error: error.detail });
     return res.status(503).json({ error: 'Admin service unavailable. Refresh before retrying.' });
   }
-};
+});
