@@ -14,7 +14,7 @@ test('download requires valid access and verified payment; paid PDF has ticket p
   global.fetch = async url => {
    const resource=new URL(url).pathname.split('/').pop();
    const rows={registrations:[{id:'RYF26-1234ABCD',visit:'both',quantity:1,amount_paise:40000,status:paid?'paid':'pending'}],festival_payments:paid?[{amount_paise:40000,transaction_id:'TEST-ONLY',verified_at:'2026-11-15T00:00:00Z'}]:[],festival_tickets:[{id:'12345678-1234-4321-8123-123456789012',position:1}],registration_participants:[{position:1,first_name:'Test',last_name:'Participant'}]};
-   return {ok:true,json:async()=>rows[resource]};
+   return Response.json(resource === 'festival_booking_document' ? { booking: rows.registrations[0], payment: rows.festival_payments[0], tickets: rows.festival_tickets, people: rows.registration_participants } : rows[resource]);
   };
   const request={method:'POST',body:{access:access('RYF26-1234ABCD'),action:'download'}};
   const pending=response(); await handler(request,pending); assert.equal(pending.statusCode,409);
@@ -54,7 +54,7 @@ test('artifact worker publishes a private PDF and downloads reject revoked ticke
       festival_tickets: [{ id: lease, position: 1, revoked_at: revoked ? '2026-11-21T00:00:00Z' : null }],
       registration_participants: [{ position: 1, first_name: 'Test', last_name: 'Participant' }],
     };
-    return Response.json(rows[name]);
+    return Response.json(name === 'festival_booking_document' ? { booking: rows.registrations[0], payment: rows.festival_payments[0], tickets: rows.festival_tickets, people: rows.registration_participants } : rows[name]);
   });
   process.env.CRON_SECRET = 'fixture';
   process.env.FESTIVAL_TICKET_ARTIFACTS = 'true';

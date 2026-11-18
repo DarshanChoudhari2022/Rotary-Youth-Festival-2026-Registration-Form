@@ -161,6 +161,10 @@ async function loadDashboard() {
     if (version === loadVersion) byId('admin-results').removeAttribute('aria-busy');
   }
   if (version !== loadVersion) return;
+  renderDirectory(result);
+}
+
+function renderDirectory(result) {
   byId('admin-results').replaceChildren(...result.participants.slice(0, 25).map(renderPerson));
   byId('admin-empty').hidden = result.participants.length > 0;
   byId('admin-previous').disabled = page === 0;
@@ -218,7 +222,8 @@ login.addEventListener('submit', async event => {
     });
     if (!response.ok) throw new Error('Sign-in failed. Check your email and password.');
     session = (await response.json()).access_token;
-    role = (await adminRequest({ action: 'session' })).role;
+    const authenticated = await adminRequest({ action: 'session', includeDirectory: true });
+    role = authenticated.role;
     byId('admin-add').hidden = !['super', 'registration'].includes(role);
     byId('admin-operations').hidden = role !== 'super';
     byId('operations-link').hidden = role !== 'super';
@@ -232,8 +237,8 @@ login.addEventListener('submit', async event => {
     page = 0;
     search = '';
     byId('admin-find').value = '';
-    await loadDashboard();
-
+    if (authenticated.directory) renderDirectory(authenticated.directory);
+    else await loadDashboard();
   } catch (error) { showError(error); }
   finally { byId('admin-password').value = ''; button.disabled = false; }
 });
@@ -248,7 +253,7 @@ byId('admin-search').onsubmit = event => {
 byId('admin-find').oninput = event => {
   clearTimeout(searchTimer);
   if (event.isComposing) return;
-  searchTimer = setTimeout(() => byId('admin-search').requestSubmit(), 350);
+  searchTimer = setTimeout(() => byId('admin-search').requestSubmit(), 220);
 };
 byId('admin-clear').onclick = () => {
   clearTimeout(searchTimer);

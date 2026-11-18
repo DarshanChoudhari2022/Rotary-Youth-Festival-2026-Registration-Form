@@ -2,8 +2,7 @@ const { createHash } = require('node:crypto');
 const { timedHandler } = require('../lib/performance');
 const { authorize, db, qr } = require('../lib/tickets');
 const { enabled } = require('../lib/easebuzz');
-const PDFDocument = require('pdfkit');
-const QRCode = require('qrcode');
+const { rpc } = require('../lib/staff');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -14,18 +13,20 @@ function participantAge(dob, date) {
   return `${years} years`;
 }
 
+let cachedFont;
 function ticketFont() {
+  if (cachedFont) return cachedFont;
   const locations = [
     path.join(process.cwd(), 'fonts', 'NotoSansDevanagari.ttf'),
     path.join(__dirname, '../fonts/NotoSansDevanagari.ttf'),
   ];
   const filename = locations.find(location => fs.existsSync(location));
-  return filename ? fs.readFileSync(filename) : 'Helvetica';
+  cachedFont = filename ? fs.readFileSync(filename) : 'Helvetica';
+  return cachedFont;
 }
 
-function heading(doc, label) {
+function heading(doc, label, logos) {
   const width = doc.page.width;
-  const logos = path.join(__dirname, '../assets/ticket-logos.png');
   doc.image(logos, 48, 27, { width: width - 96 });
   doc.rect(0, 107, width, 77).fill('#14263D');
   doc.rect(0, 184, width / 2, 4).fill('#bd1451');
@@ -66,11 +67,9 @@ module.exports = timedHandler('booking', async (req, res) => {
 // Callers must authorize access before invoking this function.
 async function sendBooking(res, id, action, ticketId, saveArtifact) {
   try {
-    const [[booking], [payment]] = await Promise.all([
-      db(`registrations?id=eq.${id}&select=id,visit,quantity,amount_paise,status,checkout_test`),
-      db(`festival_payments?registration_id=eq.${id}&revoked_at=is.null&select=amount_paise,transaction_id,verified_at`),
-    ]);
-    if (!booking) return res.status(404).json({ error: 'Booking not found.' });
+    const data = await rpc('festival_booking_document', { p_booking: id, p_download: action === 'download' });
+    if (!data?.booking) return res.status(404).json({ error: 'Booking not found.' });
+    const { booking, payment, tickets: allTickets, people } = data;
     const paid = booking.status === 'paid' && payment?.amount_paise === booking.amount_paise;
     const isDemo = booking.checkout_test || booking.visit === 'demo';
     const visitLabel = isDemo ? 'Demo only - no event date'
@@ -78,10 +77,6 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
         : booking.visit === '21' ? 'Saturday, 21 November 2026' : 'Sunday, 22 November 2026';
     if (action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: enabled() && booking.status === 'pending' });
     if (!paid) return res.status(409).json({ error: 'Tickets are available only after verified payment.' });
-    const [allTickets, people] = await Promise.all([
-      db(`festival_tickets?registration_id=eq.${id}&order=position&select=id,position,revoked_at`),
-      db(`registration_participants?registration_id=eq.${id}&order=position&select=position,first_name,last_name,mobile,email,date_of_birth,organization,city`),
-    ]);
     const tickets = allTickets.filter(ticket => !ticket.revoked_at && (!ticketId || ticket.id === ticketId));
     if (allTickets.length !== booking.quantity || !tickets.length) return res.status(409).json({ error: 'Tickets are unavailable. Please contact event support.' });
     let fingerprint;
@@ -96,11 +91,14 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
         if (artifact?.pdf_base64) return sendPdf(res, id, Buffer.from(artifact.pdf_base64, 'base64'));
       }
     }
+    const PDFDocument = require('pdfkit');
+    const QRCode = require('qrcode');
     const doc = new PDFDocument({ size: 'A4', margin: 48, font: ticketFont(), autoFirstPage: !ticketId });
+    const logos = doc.openImage(path.join(__dirname, '../assets/ticket-logos.png'));
     const chunks = [];
     const completed = new Promise((resolve, reject) => { doc.on('data', c => chunks.push(c)); doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject); });
     if (!ticketId) {
-      heading(doc, 'Payment acknowledgement');
+      heading(doc, 'Payment acknowledgement', logos);
       detail(doc, 'Registration', id);
       detail(doc, 'Amount paid', `INR ${(booking.amount_paise / 100).toFixed(2)}`);
       detail(doc, 'Ticket coverage', visitLabel);
@@ -114,7 +112,7 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
     for (const ticket of tickets) {
       const person = people.find(p => p.position === ticket.position);
       doc.addPage();
-      heading(doc, isDemo ? 'Demo ticket' : 'Participant entry ticket');
+      heading(doc, isDemo ? 'Demo ticket' : 'Participant entry ticket', logos);
       bookedDate(doc, booking.visit, isDemo);
       detail(doc, 'Participant', `${person.first_name} ${person.last_name}`);
       detail(doc, 'Mobile', person.mobile || 'Unavailable');

@@ -2,7 +2,6 @@ const { timedHandler } = require('../lib/performance');
 const { timedFetch } = require('../lib/performance');
 const { integerSetting } = require('../lib/performance');
 const { db } = require('../lib/tickets');
-const { sendBooking } = require('./booking');
 const { uuid, staffRoles, rpc, staffFor, inAllowlist } = require('../lib/staff');
 const string = value => typeof value === 'string' ? value.trim() : '';
 const emailPattern = /^[^\s@]+@[^\s@]+$/;
@@ -21,7 +20,11 @@ module.exports = timedHandler('admin', async (req, res) => {
     let body;
     try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; }
     catch { return res.status(400).json({ error: 'Invalid request.' }); }
-    if (body?.action === 'session') return res.json({ role });
+    if (body?.action === 'session') {
+      if (body.includeDirectory !== true) return res.json({ role });
+      const directory = await rpc('festival_admin_dashboard', { p_page: 0, p_find: '', p_include_days: false });
+      return res.json({ role, directory });
+    }
     if (body?.action === 'daily_attendance' && role === 'super') {
       const ttl = integerSetting('FESTIVAL_ATTENDANCE_TTL_SECONDS', 0, 0, 60);
       return res.json(ttl
@@ -95,7 +98,7 @@ module.exports = timedHandler('admin', async (req, res) => {
     }
     if (body?.action === 'download' && /^RYF26-[A-F0-9]{8}$/.test(body.booking_id || '')
         && typeof body.ticket_id === 'string' && uuid.test(body.ticket_id)) {
-      return sendBooking(res, body.booking_id, 'download', body.ticket_id);
+      return require('./booking').sendBooking(res, body.booking_id, 'download', body.ticket_id);
     }
     if (body?.action === 'edit' && ['super', 'operations'].includes(role)) {
       const fields = ['first_name', 'last_name', 'organization', 'city'].map(name =>

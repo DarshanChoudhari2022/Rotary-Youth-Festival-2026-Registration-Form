@@ -29,6 +29,17 @@ test('database fulfillment and admission invariants', async () => {
   await assert.rejects(db.query('select fulfill_festival_payment($1,$2,$3)',[booking.registration_id,'test-payment',1]));
   assert.equal((await db.query('select * from festival_tickets')).rows.length,0);
   for(let i=0;i<2;i++) await db.query('select fulfill_festival_payment($1,$2,$3)',[booking.registration_id,'test-payment',400000]);
+  const readDocument = async download => (await db.query(
+    'select festival_booking_document($1,$2) as document', [booking.registration_id, download]
+  )).rows[0].document;
+  const statusDocument = await readDocument(false);
+  assert.equal(statusDocument.booking.status, 'paid');
+  assert.equal(statusDocument.people, null);
+  assert.equal(statusDocument.tickets, null);
+  const paidDocument = await readDocument(true);
+  assert.equal(paidDocument.people.length, 10);
+  assert.equal(paidDocument.tickets.length, 10);
+  assert.equal(paidDocument.payment.transaction_id, 'test-payment');
   const tickets = (await db.query('select * from festival_tickets')).rows;
   assert.equal(tickets.length,10); assert.equal(new Set(tickets.map(t=>t.id)).size,10);
   await assert.rejects(db.query('select fulfill_festival_payment($1,$2,$3)',[booking.registration_id,'different-payment',400000]));
@@ -62,6 +73,7 @@ test('database fulfillment and admission invariants', async () => {
   await db.exec('set role anon');
   await assert.rejects(db.query("select festival_admin_dashboard(0, '')"));
   await assert.rejects(db.query('select * from festival_tickets'));
+  await assert.rejects(readDocument(true), /permission denied/);
   await assert.rejects(db.query('select fulfill_festival_payment($1,$2,$3)',[booking.registration_id,'test-payment',400000]));
  } finally { await db.close(); }
 });

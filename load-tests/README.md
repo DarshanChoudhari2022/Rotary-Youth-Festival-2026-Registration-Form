@@ -60,3 +60,9 @@ If the PDF layout or included assets change, increment FESTIVAL_TICKET_TEMPLATE_
 4. Verify payment after a closed checkout, duplicate returns, automatic download, download after an edit, revoked ticket denial, and two gates scanning the same ticket. Once payment recovery runs reliably, enable FESTIVAL_ASYNC_PAYMENT_RETURN=true.
 5. Run the sustained k6 tests and compare route timings, queue age, database load and error rates. Do not use real payment traffic for load tests.
 6. Confirm event capacity, reservation duration and late-payment policy before implementing capacity enforcement. Confirm the merchant's webhook signing and retry rules and the approved sender before enabling dedicated webhooks or email.
+
+## Single-festival deployment on Vercel Hobby
+
+For the expected 600 to 700 entries, deploy pending migrations through 019. Keep FESTIVAL_ASYNC_PAYMENT_RETURN and FESTIVAL_TICKET_ARTIFACTS unset if running without a frequent scheduler. The existing synchronous payment and PDF flows then remain the default. The booking status and paid PDF endpoint use one database request per action with the optional artifact cache disabled. Admin sign-in loads the first directory page in the same authorized request. The admin attendance snapshot remains optional and can be enabled with FESTIVAL_ATTENDANCE_TTL_SECONDS=5.
+
+Smoke-test admin sign-in, search by name and registration ID, participant edits, spot registration, customer and staff PDF downloads, and duplicate scans. An expected attendance of 600 to 700 does not configure a hard cap.
