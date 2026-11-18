@@ -31,6 +31,10 @@ test('database fulfillment and admission invariants', async () => {
   const tickets = (await db.query('select * from festival_tickets')).rows;
   assert.equal(tickets.length,10); assert.equal(new Set(tickets.map(t=>t.id)).size,10);
   await assert.rejects(db.query('select fulfill_festival_payment($1,$2,$3)',[booking.registration_id,'different-payment',400000]));
+  const demo = (await db.query('select * from create_festival_registration($1,$2,$3,$4)', [crypto.randomUUID(),'demo',JSON.stringify([people[0]]),false])).rows[0];
+  assert.equal(demo.amount_paise,100);
+  await db.query('select fulfill_festival_payment($1,$2,$3)',[demo.registration_id,'demo-payment',100]);
+  await assert.rejects(db.query('select * from create_festival_registration($1,$2,$3,$4)',[crypto.randomUUID(),'demo',JSON.stringify(people.slice(0,2)),false]));
   const staff = crypto.randomUUID();
   assert.equal((await db.query('select inspect_festival_ticket($1,$2,true) result',[tickets[0].id,staff])).rows[0].result.status,'wrong_day');
   // Simulate event date only in isolated test database, never production.

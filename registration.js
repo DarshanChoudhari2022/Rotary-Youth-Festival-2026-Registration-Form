@@ -7,30 +7,6 @@ if (!window.location.hash) {
 }
 
 const form = document.querySelector('#booking');
-const testTicketForm = document.querySelector('#test-ticket-form');
-const testAccess = document.querySelector('#test-ticket-access');
-const testToken = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/;
-const suppliedTestToken = new URLSearchParams(location.hash.slice(1)).get('test-booking');
-if (suppliedTestToken && testToken.test(suppliedTestToken)) {
-  document.querySelector('#test-ticket').open = true;
-  testAccess.value = suppliedTestToken;
-  history.replaceState(null, '', location.pathname + location.search);
-}
-testAccess.addEventListener('input', () => testAccess.setCustomValidity(''));
-testTicketForm.addEventListener('submit', event => {
-  event.preventDefault();
-  let token = testAccess.value.trim();
-  if (!testToken.test(token)) {
-    try { token = new URLSearchParams(new URL(token).hash.slice(1)).get('test-booking'); }
-    catch { token = null; }
-  }
-  if (!token || !testToken.test(token)) {
-    testAccess.setCustomValidity('Enter the private test booking link or access code.');
-    testAccess.reportValidity();
-    return;
-  }
-  location.assign('/thank-you.html#test-booking=' + encodeURIComponent(token));
-});
 const cards = document.querySelector('#participants');
 const template = document.querySelector('#participant-template');
 const guardian = document.querySelector('#guardian');
@@ -52,6 +28,7 @@ const visits = {
   21: { label: '21 November 2026', price: 200, days: [21] },
   22: { label: '22 November 2026', price: 200, days: [22] },
   both: { label: '21–22 November 2026', price: 400, days: [21, 22] },
+  demo: { label: 'Demo ticket · no festival admission', price: 1, days: [21] },
 };
 const today = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -93,6 +70,8 @@ function addParticipant() {
 function updateBooking() {
   const visit = visits[form.elements.visit.value];
   const quantity = cards.children.length;
+  const isDemo = form.elements.visit.value === 'demo';
+  form.querySelector('[value="demo"]').disabled = quantity > 1;
   let hasMinor = false;
   const mobiles = new Set();
   for (const card of cards.children) {
@@ -110,7 +89,7 @@ function updateBooking() {
     if (dob.value && dob.validity.valid) {
       hasMinor ||= ageOn(dob.value, days[0]) < 18;
     }
-    card.querySelector('.eligibility').textContent = dob.value && dob.validity.valid && visit
+    card.querySelector('.eligibility').textContent = dob.value && dob.validity.valid && visit && !isDemo
       ? days.filter(day => ageOn(dob.value, day) < 16)
         .map(day => `Food coupon eligible on ${day} November.`).join(' ')
       : '';
@@ -122,7 +101,7 @@ function updateBooking() {
   guardian.disabled = !hasMinor;
   guardian.required = hasMinor;
   if (!hasMinor) guardian.checked = false;
-  plus.disabled = quantity === 10;
+  plus.disabled = quantity === 10 || isDemo;
   minus.disabled = quantity === 1;
   document.querySelector('#count').value = quantity;
   document.querySelector('#visit-summary').textContent = visit?.label ?? 'Choose your visit';

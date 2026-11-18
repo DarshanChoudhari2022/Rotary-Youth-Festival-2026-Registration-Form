@@ -49,7 +49,8 @@ async function refresh() {
     document.querySelector('#payment-status').textContent = result.status === 'paid' ? 'Payment verified' : 'Payment pending';
     download.hidden = result.status !== 'paid';
     pay.hidden = !result.payment_enabled;
-    message.textContent = result.status === 'paid' ? 'Your booking is confirmed. Keep your tickets ready for entry.'
+    message.textContent = result.status === 'paid' ? (
+      result.visit === 'demo' || result.checkout_test ? 'Demo payment verified. Your PDF is for testing only.' : 'Your booking is confirmed. Keep your tickets ready for entry.')
       : result.payment_enabled ? 'Pay securely with Easebuzz. If you just paid, check payment status before trying again.'
       : 'Online payment is currently unavailable. Your registration is saved.';
     if (result.status === 'paid' && !sessionStorage.getItem('downloaded-' + saved.registration_id)) {

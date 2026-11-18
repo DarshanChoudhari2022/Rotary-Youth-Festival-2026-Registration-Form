@@ -1,11 +1,12 @@
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const FIRST_VISIT = { 21: '2026-11-21', 22: '2026-11-22', both: '2026-11-21' };
+const FIRST_VISIT = { 21: '2026-11-21', 22: '2026-11-22', both: '2026-11-21', demo: '2026-11-21' };
 
 function validate(body) {
   const { requestId, visit, participants, declarations, guardianConsent } = body ?? {};
   if (typeof requestId !== 'string' || !UUID.test(requestId)
       || !Object.hasOwn(FIRST_VISIT, visit) || typeof visit !== 'string'
       || !Array.isArray(participants) || participants.length < 1 || participants.length > 10
+      || (visit === 'demo' && participants.length !== 1)
       || !['accuracy', 'policies', 'refund', 'food'].every(key => declarations?.[key] === true)) {
     throw new Error('Check the visit, participant count and registration declarations.');
   }

@@ -14,6 +14,10 @@ module.exports = async (req, res) => {
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     const [payment] = await db(`festival_payments?registration_id=eq.${id}&revoked_at=is.null`);
     const paid = booking.status === 'paid' && payment?.amount_paise === booking.amount_paise;
+    const isDemo = booking.checkout_test || booking.visit === 'demo';
+    const visitLabel = isDemo ? 'Demo only - no event date'
+      : booking.visit === 'both' ? 'Saturday, 21 November and Sunday, 22 November 2026'
+        : booking.visit === '21' ? 'Saturday, 21 November 2026' : 'Sunday, 22 November 2026';
     if (body.action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: enabled() && booking.status === 'pending' });
     if (!paid) return res.status(409).json({ error: 'Tickets are available only after verified payment.' });
     const tickets = await db(`festival_tickets?registration_id=eq.${id}&order=position`);
@@ -26,16 +30,17 @@ module.exports = async (req, res) => {
     doc.fontSize(26).text('Naya Bharat 2047');
     doc.fontSize(12).text('Rotary & Rotaract District 3131').moveDown();
     doc.fontSize(20).text('Payment acknowledgement').moveDown();
-    doc.fontSize(12).text(`Registration: ${id}\nPaid: INR ${(booking.amount_paise / 100).toFixed(2)}\nParticipants: ${booking.quantity}\nPayment reference: ${payment.transaction_id}\nVerified: ${payment.verified_at}`).moveDown();
+    doc.fontSize(12).text(`Registration: ${id}\nPaid: INR ${(booking.amount_paise / 100).toFixed(2)}\nTicket coverage: ${visitLabel}\nParticipants: ${booking.quantity}\nPayment reference: ${payment.transaction_id}\nVerified: ${payment.verified_at}`).moveDown();
     doc.text('This is a payment acknowledgement, not a GST tax invoice.');
     for (const ticket of tickets) {
       const person = people.find(p => p.position === ticket.position);
-      doc.addPage().fontSize(26).text('Naya Bharat 2047').fontSize(14).text('Participant entry ticket').moveDown();
-      if (booking.checkout_test) doc.text('PAYMENT TEST - NOT VALID FOR EVENT ADMISSION').moveDown();
+      doc.addPage().fontSize(26).text('Naya Bharat 2047').fontSize(14).text(isDemo ? 'Demo ticket' : 'Participant entry ticket').moveDown();
+      if (isDemo) doc.text('PAYMENT TEST - NOT VALID FOR EVENT ADMISSION').moveDown();
       doc.fontSize(18).text(`${person.first_name} ${person.last_name}`).fontSize(12).moveDown();
-      doc.text(`Visit: ${booking.visit === 'both' ? '21 & 22' : booking.visit} November 2026\nVenue: Fergusson College, Pune\nRegistration: ${id}\nTicket: ${ticket.id}`);
+      doc.text(`Ticket coverage: ${visitLabel}\n${isDemo ? '' : 'Venue: Fergusson College, Pune\n'}Registration: ${id}\nTicket: ${ticket.id}`);
       doc.image(await QRCode.toBuffer(qr(ticket.id), { width: 300, errorCorrectionLevel: 'M' }), 48, 260, { width: 240 });
-      doc.text('Present this QR and identification at the gate.\nValid for one admission per selected day. Do not share this ticket.\nAuthenticity and admission are checked online by authorised staff.\nSupport: +91 90110 23332', 48, 530);
+      doc.text(isDemo ? 'This QR is for scanner testing only.\nSupport: +91 90110 23332'
+        : 'Present this QR and identification at the gate.\nValid for one admission per selected day. Do not share this ticket.\nAuthenticity and admission are checked online by authorised staff.\nSupport: +91 90110 23332', 48, 530);
     }
     doc.end();
     const pdf = await completed;
