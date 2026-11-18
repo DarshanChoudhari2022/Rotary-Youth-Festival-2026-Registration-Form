@@ -294,13 +294,31 @@ button, input { font-family: inherit; }
   .event-tabs { flex-wrap: wrap; gap: 0 16px; }
   #registration { padding-top: 28px; }
 }
-.admin-page { padding-block: 32px; }
+.admin-shell { min-height: 100vh; background: #f3f6fa; color: #14263d; }
+.admin-shell [hidden] { display: none !important; }
+.admin-shell .policy-header { background: #fff; }
+.admin-page { padding-block: clamp(20px, 4vw, 42px); }
+.admin-page h1 { margin: 0 0 16px; font-size: clamp(1.65rem, 4vw, 2.35rem); }
+.admin-page h2 { font-size: 1.25rem; }
+.admin-page #admin-message:empty { display: none; }
+.admin-page #admin-message { padding: 12px 16px; background: #e7eff8; border-radius: 8px; }
+.admin-page #admin-login { margin: 24px auto; }
+.admin-page #admin-login h2 { margin: 0 0 8px; }
 .admin-form { display: grid; gap: 10px; max-width: 440px; }
 .admin-form input, .admin-toolbar input { min-height: 44px; padding: 8px 12px; border: 1px solid #8997a5; border-radius: 5px; font: inherit; }
 .admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 16px; }
 .admin-toolbar h2 { margin: 0 auto 0 0; }
 .admin-days { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 14px; }
-.admin-table { overflow: auto; }
-.admin-table table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-.admin-table th, .admin-table td { text-align: left; padding: 10px; border-bottom: 1px solid var(--line); }
-.admin-table button { margin: 2px; }
+.admin-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 315px), 1fr)); gap: 14px; }
+.admin-record { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.admin-record h3 { margin: 0; overflow-wrap: anywhere; font-size: 1.1rem; }
+.admin-record dl { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 7px 12px; font-size: .875rem; }
+.admin-record dt { color: #526475; }
+.admin-record dd { margin: 0; overflow-wrap: anywhere; }
+.admin-actions { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.admin-actions button { min-height: 44px; }
+@media (max-width: 540px) {
+  .admin-shell .policy-header { padding-inline: 12px; gap: 12px; }
+  #admin-search label { flex-basis: 100%; }
+  #admin-search input { flex: 1; min-width: 0; }
+}

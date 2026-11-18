@@ -8,12 +8,13 @@
   <link rel="stylesheet" href="/styles.css">
   <script src="/admin.js" defer></script>
 </head>
-<body class="policy-page">
+<body class="admin-shell">
   <header class="policy-header"><a href="/">Naya Bharat 2047</a><a href="/scanner.html">Gate scanner</a></header>
   <main class="wrap admin-page">
-    <h1>Festival administration</h1>
+    <h1>Festival dashboard</h1>
     <p id="admin-message" role="status"></p>
     <form id="admin-login" class="panel admin-form">
+      <h2>Staff sign-in</h2>
       <label for="admin-email">Admin email</label>
       <input id="admin-email" type="email" autocomplete="username" required>
       <label for="admin-password">Password</label>
@@ -30,12 +31,8 @@
         <input id="admin-find" maxlength="64">
         <button>Search</button>
       </form>
-      <div class="admin-table" tabindex="0" aria-label="Registration results">
-        <table>
-          <thead><tr><th scope="col">Booking</th><th scope="col">Participant</th><th scope="col">Visit</th><th scope="col">Payment</th><th scope="col">Ticket</th><th scope="col">Actions</th></tr></thead>
-          <tbody id="admin-results"></tbody>
-        </table>
-      </div>
+      <p id="admin-empty" hidden>No matching registrations.</p>
+      <div id="admin-results" class="admin-results" aria-label="Registration results"></div>
       <div class="admin-toolbar"><button type="button" id="admin-previous">Previous</button><span id="admin-page-number"></span><button type="button" id="admin-next">Next</button></div>
     </section>
     <dialog id="admin-edit">

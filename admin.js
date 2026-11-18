@@ -27,6 +27,7 @@ function signOut() {
   byId('admin-days').replaceChildren();
   dashboard.hidden = true;
   login.hidden = false;
+  byId('admin-password').focus();
 }
 
 async function adminRequest(data) {
@@ -84,14 +85,25 @@ async function revokeTicket(person, button) {
 }
 
 function renderPerson(person) {
-  const row = document.createElement('tr');
+  const row = document.createElement('article');
+  row.className = 'admin-record';
   const visit = person.checkout_test || person.visit === 'demo' ? 'Demo'
-    : { '21': '21 Nov', '22': '22 Nov', both: '21 & 22 Nov' }[person.visit];
+    : { '21': '21 November 2026', '22': '22 November 2026', both: '21–22 November 2026' }[person.visit];
   const age = [person.under_16_day_one && '21 Nov', person.under_16_day_two && '22 Nov'].filter(Boolean).join(', ');
-  const ticket = person.ticket_id ? (person.revoked_at ? 'Revoked' : person.ticket_id) : 'Awaiting payment';
-  for (const value of [person.booking_id, person.first_name + ' ' + person.last_name + (age ? ' · Under 16 on ' + age : ''),
-    visit, person.status === 'paid' ? 'Paid' : 'Pending', ticket]) row.append(element('td', value));
-  const actions = document.createElement('td');
+  const ticket = person.ticket_id ? (person.revoked_at ? 'Revoked' : 'Active') : 'Not issued';
+  const amount = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(person.amount_paise / 100);
+  const details = document.createElement('dl');
+  for (const [label, value] of [
+    ['Registration', person.booking_id], ['Visit', visit],
+    ['Payment', person.status === 'paid' ? 'Paid' : 'Pending'], ['Booking total', amount],
+    ['Ticket status', ticket], ['Ticket ID', person.ticket_id],
+    ['Food coupon date', age], ['College / organisation', person.organization], ['City', person.city],
+  ]) {
+    if (value) details.append(element('dt', label), element('dd', value));
+  }
+  row.append(element('h3', person.first_name + ' ' + person.last_name), details);
+  const actions = document.createElement('div');
+  actions.className = 'admin-actions';
   const editButton = element('button', 'Edit');
   editButton.type = 'button';
   editButton.addEventListener('click', () => openEditor(person));
@@ -103,7 +115,7 @@ function renderPerson(person) {
       download.addEventListener('click', () => downloadTicket(person, download));
       actions.append(download);
     }
-    const revoke = element('button', 'Revoke');
+    const revoke = element('button', 'Revoke pass');
     revoke.type = 'button';
     revoke.addEventListener('click', () => revokeTicket(person, revoke));
     actions.append(revoke);
@@ -127,12 +139,13 @@ async function loadDashboard() {
   });
   byId('admin-days').replaceChildren(...days);
   byId('admin-results').replaceChildren(...result.participants.slice(0, 25).map(renderPerson));
+  byId('admin-empty').hidden = result.participants.length > 0;
   byId('admin-previous').disabled = page === 0;
   byId('admin-next').disabled = result.participants.length <= 25;
   byId('admin-page-number').textContent = 'Page ' + (page + 1);
   login.hidden = true;
   dashboard.hidden = false;
-  message.textContent = result.participants.length ? '' : 'No matching registrations.';
+  message.textContent = '';
 }
 
 function showError(error) { message.textContent = error.message; }
@@ -147,6 +160,7 @@ login.addEventListener('submit', async event => {
   if (!config?.adminEnabled) return;
   const button = login.querySelector('button');
   button.disabled = true;
+  message.textContent = 'Signing in…';
   try {
     const response = await fetch(new URL('/auth/v1/token?grant_type=password', config.url), {
       method: 'POST', headers: { apikey: config.key, 'Content-Type': 'application/json' },
@@ -155,6 +169,8 @@ login.addEventListener('submit', async event => {
     });
     if (!response.ok) throw new Error('Sign-in failed. Check your email and password.');
     session = (await response.json()).access_token;
+    login.hidden = true;
+    dashboard.hidden = false;
     page = 0;
     search = '';
     byId('admin-find').value = '';
