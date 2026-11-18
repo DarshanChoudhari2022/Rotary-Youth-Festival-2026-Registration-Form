@@ -11,6 +11,11 @@ let page = 0;
 let search = '';
 let loadVersion = 0;
 let listRequest;
+const recentPages = new Map();
+function rememberPage(key, result) {
+  if (recentPages.size >= 8) recentPages.delete(recentPages.keys().next().value);
+  recentPages.set(key, { result, expires: Date.now() + 5000 });
+}
 let role;
 let attendanceTimer;
 const bookingCurrency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' });
@@ -23,6 +28,9 @@ function element(tag, text) {
 }
 
 function signOut() {
+  dashboard.hidden = true;
+  login.hidden = false;
+  recentPages.clear();
   session = null;
   role = null;
   clearTimeout(attendanceTimer);
@@ -42,9 +50,8 @@ function signOut() {
   selected = null;
   byId('admin-results').replaceChildren();
   byId('admin-days').replaceChildren();
-  dashboard.hidden = true;
-  login.hidden = false;
-  byId('admin-password').focus();
+  byId('admin-password').focus({ preventScroll: true });
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 async function adminRequest(data, signal = AbortSignal.timeout(15000)) {
@@ -58,6 +65,7 @@ async function adminRequest(data, signal = AbortSignal.timeout(15000)) {
     return response.blob();
   }
   const result = await response.json();
+  if (requestSession !== session) throw new Error('Your sign-in session has changed.');
   if (!response.ok) throw new Error(result.error);
   if (data.action === 'download') throw new Error('The ticket PDF could not be downloaded.');
   return result;
@@ -137,6 +145,13 @@ function renderPerson(person) {
 async function loadDashboard() {
   const version = ++loadVersion;
   listRequest?.abort();
+  const key = JSON.stringify([page, search]);
+  const cached = recentPages.get(key);
+  if (cached && cached.expires > Date.now()) {
+    byId('admin-results').removeAttribute('aria-busy');
+    renderDirectory(cached.result);
+    return;
+  }
   const controller = new AbortController();
   listRequest = controller;
   const timeout = setTimeout(() => controller.abort(), 15000);
@@ -161,6 +176,7 @@ async function loadDashboard() {
     if (version === loadVersion) byId('admin-results').removeAttribute('aria-busy');
   }
   if (version !== loadVersion) return;
+  rememberPage(key, result);
   renderDirectory(result);
 }
 
@@ -204,6 +220,13 @@ let searchTimer;
 function showError(error) { message.textContent = error.message; }
 fetch('/api/scanner-config').then(response => response.json()).then(result => {
   config = result;
+  if (result.url) {
+    const connection = document.createElement('link');
+    connection.rel = 'preconnect';
+    connection.href = new URL(result.url).origin;
+    connection.crossOrigin = 'anonymous';
+    document.head.append(connection);
+  }
   login.querySelector('button').disabled = !config.adminEnabled;
   if (!config.adminEnabled) message.textContent = 'Admin access has not been configured.';
 }).catch(() => { message.textContent = 'Could not load sign-in configuration.'; });
@@ -214,6 +237,7 @@ login.addEventListener('submit', async event => {
   const button = login.querySelector('button');
   button.disabled = true;
   message.textContent = 'Signing in…';
+  button.textContent = 'Signing in…';
   try {
     const response = await fetch(new URL('/auth/v1/token?grant_type=password', config.url), {
       method: 'POST', headers: { apikey: config.key, 'Content-Type': 'application/json' },
@@ -237,10 +261,12 @@ login.addEventListener('submit', async event => {
     page = 0;
     search = '';
     byId('admin-find').value = '';
-    if (authenticated.directory) renderDirectory(authenticated.directory);
-    else await loadDashboard();
+    if (authenticated.directory) {
+      rememberPage(JSON.stringify([0, '']), authenticated.directory);
+      renderDirectory(authenticated.directory);
+    } else await loadDashboard();
   } catch (error) { showError(error); }
-  finally { byId('admin-password').value = ''; button.disabled = false; }
+  finally { byId('admin-password').value = ''; button.disabled = false; button.textContent = 'Sign in'; }
 });
 byId('admin-sign-out').onclick = () => { signOut(); message.textContent = 'Signed out.'; };
 byId('admin-search').onsubmit = event => {
@@ -273,6 +299,7 @@ editForm.onsubmit = async event => {
     await adminRequest({ action: 'edit', booking_id: selected.booking_id, position: selected.position,
       ...Object.fromEntries(new FormData(editForm)) });
     edit.close();
+    recentPages.clear();
     await loadDashboard();
   } catch (error) {
     (edit.open ? byId('edit-message') : message).textContent = error.message;
@@ -296,10 +323,15 @@ function updateSpot() {
 byId('admin-add').onclick = () => {
   spotForm.reset();
   spotRequest = crypto.randomUUID();
-  spotSubmit.disabled = false;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const open = ['2026-11-21', '2026-11-22'].includes(today);
+  byId('spot-availability').hidden = open;
+  for (const field of spotForm.querySelectorAll('label, #spot-price')) field.hidden = !open;
+  spotSubmit.hidden = !open;
+  spotSubmit.disabled = !open;
   byId('spot-message').textContent = '';
   byId('spot-result').replaceChildren();
-  updateSpot();
+  if (open) updateSpot();
   spot.showModal();
 };
 spotForm.oninput = event => {
@@ -321,6 +353,7 @@ spotForm.onsubmit = async event => {
     download.type = 'button';
     download.onclick = () => downloadTicket({ ...result, position: 1 }, download);
     byId('spot-result').replaceChildren(download);
+    recentPages.clear();
     loadDashboard().catch(showError);
     if (role === 'super') {
       refreshAttendance();

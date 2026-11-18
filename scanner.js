@@ -14,6 +14,8 @@ $('#staff-login').addEventListener('submit', async event => {
     const gate = await scanRequest(token, { action: 'session' });
     if (!gate.ok) throw new Error((await gate.json()).error);
     accessToken = token;
+    // Warm the decoder while staff position the first ticket.
+    loadDecoder().catch(() => {});
     $('#staff-login').hidden = true; $('#scan-panel').hidden = false;
     message.textContent = 'Ready to verify a ticket.'; $('#camera-start').focus({ preventScroll: true });
   } catch (error) { message.textContent = error.message; } finally { button.disabled = false; }
@@ -117,10 +119,16 @@ $('#camera-start').onclick = async () => {
     if (session !== cameraSession) return;
     scanning = true;
     message.textContent = 'Hold the ticket QR inside the camera view.';
+    let frame = 0, lastFrameTime = -1;
     while (scanning && session === cameraSession) {
-      const code = video.readyState >= 2 && decodeFrame(decode, video, video.videoWidth, video.videoHeight, 720);
+      let code;
+      if (video.readyState >= 2 && video.currentTime !== lastFrameTime) {
+        lastFrameTime = video.currentTime;
+        // Try a smaller frame first, retaining detail on alternate frames for distant tickets.
+        code = decodeFrame(decode, video, video.videoWidth, video.videoHeight, frame++ % 2 ? 720 : 480);
+      }
       if (code) { $('#ticket-token').value = code; stopCamera(); await check(); break; }
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   } catch {
     if (session !== cameraSession) return;
@@ -140,7 +148,9 @@ $('#qr-photo').onchange = async event => {
     image.src = url;
     const [decode] = await Promise.all([loadDecoder(), image.decode()]);
     if (session !== cameraSession) return;
-    const code = decodeFrame(decode, image, image.naturalWidth, image.naturalHeight, 1600);
+    const { naturalWidth: width, naturalHeight: height } = image;
+    let code = decodeFrame(decode, image, width, height, 512);
+    if (!code && Math.max(width, height) > 512) code = decodeFrame(decode, image, width, height, 1600);
     if (!code) throw new Error('QR not found');
     $('#ticket-token').value = code;
     await check();

@@ -7,6 +7,7 @@
   <title>Festival administration | Naya Bharat 2047</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/dashboard.css">
+  <link rel="preload" href="/api/scanner-config" as="fetch" crossorigin="anonymous">
   <script src="/admin.js" defer></script>
 </head>
 <body class="admin-shell">
@@ -73,6 +74,7 @@
     <dialog id="admin-spot" aria-labelledby="spot-title">
       <form id="admin-spot-form" class="admin-form">
         <h2 id="spot-title">Add Participant</h2>
+        <p id="spot-availability" hidden>Spot registration and gate check-in run on 21 and 22 November 2026 (India time). For advance bookings, <a href="/register.html">register a participant online</a>.</p>
         <label>Participant name <input name="name" maxlength="100" required></label>
         <label>Mobile number <input name="mobile" type="tel" maxlength="20" required></label>
         <label>Email (optional) <input name="email" type="email" maxlength="254"></label>
