@@ -83,6 +83,9 @@ module.exports = async function register(req, res) {
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(10000),
     });
+    if (result.status === 422 && (await result.json()).code === 'PT422') {
+      return res.status(422).json({ error: 'Only 22 November tickets can be booked today. Return to registration and select 22 November.' });
+    }
     if (result.status === 409) {
       const conflict = await result.json();
       const participant = Number(conflict.details);

@@ -1,4 +1,4 @@
-let config, accessToken, checkedToken, stream, scanning = false, busy = false;
+let config, accessToken, stream, scanning = false, busy = false;
 const $ = selector => document.querySelector(selector);
 const message = $('#scanner-message');
 fetch('/api/scanner-config').then(r => r.json()).then(c => { config = c; message.textContent = c.enabled ? 'Sign in with your assigned staff account.' : 'Staff access is not configured yet. Contact the organiser.'; }).catch(() => { message.textContent = 'Unable to connect. Please reload.'; });
@@ -10,7 +10,10 @@ $('#staff-login').addEventListener('submit', async event => {
     const response = await fetch(config.url + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: config.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: $('#staff-email').value, password: $('#staff-password').value }) });
     $('#staff-password').value = '';
     if (!response.ok) throw new Error('Unable to sign in. Check your credentials and try again.');
-    accessToken = (await response.json()).access_token;
+    const token = (await response.json()).access_token;
+    const gate = await scanRequest(token, { action: 'session' });
+    if (!gate.ok) throw new Error((await gate.json()).error);
+    accessToken = token;
     $('#staff-login').hidden = true; $('#scan-panel').hidden = false;
     message.textContent = 'Ready to verify a ticket.'; $('#camera-start').focus({ preventScroll: true });
   } catch (error) { message.textContent = error.message; } finally { button.disabled = false; }
@@ -52,35 +55,41 @@ function stopCamera() {
   $('#camera-stop').hidden = true;
   $('#camera-start').disabled = false;
 }
-$('#logout').onclick = () => { stopCamera(); accessToken = null; checkedToken = null; $('#ticket-result').replaceChildren(); $('#admit').hidden = true; $('#ticket-token').value = ''; $('#scan-panel').hidden = true; $('#staff-login').hidden = false; message.textContent = 'Signed out.'; };
-$('#ticket-token').oninput = () => { checkedToken = null; $('#admit').hidden = true; $('#ticket-result').replaceChildren(); };
-async function check(action) {
+$('#logout').onclick = () => { stopCamera(); accessToken = null; delete message.dataset.outcome; $('#ticket-result').replaceChildren(); $('#ticket-token').value = ''; $('#scan-panel').hidden = true; $('#staff-login').hidden = false; message.textContent = 'Signed out.'; };
+$('#ticket-token').oninput = () => { delete message.dataset.outcome; $('#ticket-result').replaceChildren(); message.textContent = 'Ready to check in.'; };
+function scanRequest(token, data) {
+  return fetch('/api/scanner', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data), signal: AbortSignal.timeout(15000) });
+}
+const checkInTime = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
+async function check() {
   if (busy || !accessToken) return;
   const sessionToken = accessToken;
   const token = $('#ticket-token').value.trim();
-  if (action === 'admit' && token !== checkedToken) return;
   busy = true;
   $('#ticket-token').disabled = true;
-  $('#admit').hidden = true; $('#ticket-result').replaceChildren();
+  delete message.dataset.outcome;
+  $('#ticket-result').replaceChildren();
   message.textContent = 'Checking…';
   try {
-    const response = await fetch('/api/scanner', { method: 'POST', headers: { Authorization: 'Bearer ' + sessionToken, 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ticket: token }) });
+    const response = await scanRequest(sessionToken, { action: 'admit', ticket: token });
     if (sessionToken !== accessToken) return;
     const result = await response.json(); if (!response.ok) throw new Error(result.error);
-    const outcomes = { valid: 'Valid ticket. Check identity, then confirm admission.', admitted: 'Admission recorded.', already_used: 'Already admitted today. Do not admit again.', wrong_day: 'Not valid for today. Do not admit.', invalid_or_revoked: 'Unpaid or revoked ticket. Do not admit.', unknown: 'Unknown ticket. Do not admit.' };
+    message.dataset.outcome = result.status;
+    const outcomes = { admitted: 'CHECKED IN. Issue the wristband.', already_used: 'ALREADY CHECKED IN. Do not issue another wristband.', wrong_day: 'Not valid for today. Do not admit.', invalid_or_revoked: 'Unpaid or invalid ticket. Do not admit.', unknown: 'Unknown ticket. Do not admit.' };
     message.textContent = result.status === 'test_ticket' ? 'Payment test ticket. Do not admit.' : outcomes[result.status] || 'Unable to verify. Do not admit.';
-    for (const [label, value] of [['Participant', result.name], ['Visit', result.visit], ['Ticket', result.ticket_id], ['Admission time', result.admitted_at]]) {
+    const admittedAt = result.admitted_at && checkInTime.format(new Date(result.admitted_at));
+    for (const [label, value] of [['Participant', result.name], ['Ticket ID', result.ticket_id], ['Check-in time (IST)', admittedAt],
+      ['Checked in by', result.staff_name || result.staff_id], ['Food coupon', admittedAt && result.food_eligible ? 'Eligible' : '']]) {
       if (!value) continue;
       const term = document.createElement('dt'), detail = document.createElement('dd'); term.textContent = label; detail.textContent = value; $('#ticket-result').append(term, detail);
     }
-    checkedToken = token; $('#admit').hidden = result.status !== 'valid';
   } catch (error) {
-    if (sessionToken === accessToken) { message.textContent = error.message; checkedToken = null; }
+    if (sessionToken === accessToken) message.textContent = error.message;
   }
   finally { busy = false; $('#ticket-token').disabled = false; }
 }
-$('#scan-form').onsubmit = event => { event.preventDefault(); stopCamera(); check('inspect'); };
-$('#admit').onclick = () => check('admit');
+$('#scan-form').onsubmit = event => { event.preventDefault(); stopCamera(); check(); };
 $('#camera-stop').onclick = stopCamera;
 $('#camera-start').onclick = async () => {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -106,7 +115,7 @@ $('#camera-start').onclick = async () => {
     message.textContent = 'Hold the ticket QR inside the camera view.';
     while (scanning && session === cameraSession) {
       const code = video.readyState >= 2 && decodeFrame(decode, video, video.videoWidth, video.videoHeight, 720);
-      if (code) { $('#ticket-token').value = code; stopCamera(); await check('inspect'); break; }
+      if (code) { $('#ticket-token').value = code; stopCamera(); await check(); break; }
       await new Promise(resolve => setTimeout(resolve, 200));
     }
   } catch {
@@ -130,7 +139,7 @@ $('#qr-photo').onchange = async event => {
     const code = decodeFrame(decode, image, image.naturalWidth, image.naturalHeight, 1600);
     if (!code) throw new Error('QR not found');
     $('#ticket-token').value = code;
-    await check('inspect');
+    await check();
   } catch {
     if (session === cameraSession) message.textContent = 'Could not read the QR. Try a clearer image or use manual verification.';
   } finally {

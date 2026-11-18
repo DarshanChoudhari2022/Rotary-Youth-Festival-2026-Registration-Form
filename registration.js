@@ -30,9 +30,24 @@ const visits = {
   both: { label: '21–22 November 2026', price: 400, days: [21, 22] },
   demo: { label: 'Demo ticket · no festival admission', price: 1, days: [21] },
 };
-const today = new Intl.DateTimeFormat('en-CA', {
+const offerCutoff = '2010-11-01';
+const secondDay = '2026-11-22';
+const eventClock = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
-}).format(new Date());
+});
+
+function eventDate() {
+  const parts = Object.fromEntries(eventClock.formatToParts(new Date()).map(({ type, value }) => [type, value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function eligibleForOffer(dob) {
+  return dob.validity.valid && dob.value >= offerCutoff;
+}
+
+function bookingTotal(visit, discountCount) {
+  return visit.price * cards.children.length - (visit.price / 2) * discountCount;
+}
 
 function ageOn(dob, day) {
   const [year, month, date] = dob.split('-').map(Number);
@@ -42,7 +57,7 @@ function ageOn(dob, day) {
 function addParticipant() {
   const card = template.content.firstElementChild.cloneNode(true);
   card.querySelector('.participant-title').textContent = `Participant ${cards.children.length + 1}`;
-  card.querySelector('[name=dob]').max = today;
+  card.querySelector('[name=dob]').max = eventDate();
   for (const input of card.querySelectorAll('input')) {
     const error = document.createElement('span');
     error.className = 'field-error';
@@ -68,11 +83,18 @@ function addParticipant() {
 }
 
 function updateBooking() {
+  const today = eventDate();
+  for (const option of form.querySelectorAll('[name=visit]')) {
+    const unavailable = today === secondDay && option.value !== '22';
+    option.closest('label').hidden = unavailable;
+    option.disabled = unavailable || (option.value === 'demo' && cards.children.length > 1);
+    if (unavailable) option.checked = false;
+  }
   const visit = visits[form.elements.visit.value];
   const quantity = cards.children.length;
   const isDemo = form.elements.visit.value === 'demo';
-  form.querySelector('[value="demo"]').disabled = quantity > 1;
   let hasMinor = false;
+  let discountCount = 0;
   const mobiles = new Set();
   for (const card of cards.children) {
     const inputs = [...card.querySelectorAll('input')];
@@ -85,14 +107,14 @@ function updateBooking() {
       : (mobile.dataset.registered === mobile.value ? 'This number is already registered. Use a different number or call 9011023332.' : ''));
     if (mobile.value) mobiles.add(mobile.value);
     const dob = card.querySelector('[name=dob]');
+    dob.max = today;
     const days = visit?.days ?? [21];
     if (dob.value && dob.validity.valid) {
       hasMinor ||= ageOn(dob.value, days[0]) < 18;
     }
-    card.querySelector('.eligibility').textContent = dob.value && dob.validity.valid && visit && !isDemo
-      ? days.filter(day => ageOn(dob.value, day) < 16)
-        .map(day => `Food coupon eligible on ${day} November.`).join(' ')
-      : '';
+    const eligible = visit && !isDemo && eligibleForOffer(dob);
+    if (eligible) discountCount++;
+    card.querySelector('.eligibility').textContent = eligible ? '50% off + free food coupon.' : '';
     card.querySelector('.participant-status').textContent =
       inputs.every(input => input.validity.valid) ? '✓ Completed' : '';
   }
@@ -106,9 +128,9 @@ function updateBooking() {
   document.querySelector('#count').value = quantity;
   document.querySelector('#visit-summary').textContent = visit?.label ?? 'Choose your visit';
   const participants = `${quantity} participant${quantity === 1 ? '' : 's'}`;
-  const total = visit ? currency.format(visit.price * quantity) : '';
+  const total = visit ? currency.format(bookingTotal(visit, discountCount)) : '';
   document.querySelector('#breakdown').textContent = visit
-    ? `${participants} · ${currency.format(visit.price)} × ${quantity} = ${total}` : participants;
+    ? `${participants}${discountCount ? ` · ${discountCount} with 50% off` : ''} · ${total}` : participants;
   pay.disabled = !visit;
   pay.textContent = visit ? `Review · ${total}` : 'Select a visit';
 }
@@ -137,6 +159,13 @@ minus.addEventListener('click', () => {
 });
 
 form.addEventListener('input', updateBooking);
+window.addEventListener('pageshow', updateBooking);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) updateBooking(); });
+let lastEventDate = eventDate();
+setInterval(() => {
+  const current = eventDate();
+  if (current !== lastEventDate) { lastEventDate = current; updateBooking(); }
+}, 15000);
 form.addEventListener('invalid', event => {
   const card = event.target.closest('details');
   if (card) card.open = true;
@@ -144,9 +173,13 @@ form.addEventListener('invalid', event => {
 
 form.addEventListener('submit', event => {
   event.preventDefault();
+  updateBooking();
   const visit = visits[form.elements.visit.value];
+  if (!visit) return;
+  const discountCount = form.elements.visit.value === 'demo' ? 0
+    : [...cards.querySelectorAll('[name=dob]')].filter(eligibleForOffer).length;
   document.querySelector('#review-total').textContent =
-    `${visit.label} · ${cards.children.length} ticket(s) · ${currency.format(visit.price * cards.children.length)}`;
+    `${visit.label} · ${cards.children.length} ticket(s)${discountCount ? ` · ${discountCount} with 50% off` : ''} · ${currency.format(bookingTotal(visit, discountCount))}`;
   const list = document.querySelector('#review-participants');
   list.replaceChildren();
   const participants = [];
@@ -267,3 +300,11 @@ review.addEventListener('cancel', event => {
 
 addParticipant();
 updateBooking();
+
+const bookingBar = document.querySelector('.summary');
+function reserveBookingBarSpace() {
+  document.body.style.setProperty('--booking-bar-height', `${Math.ceil(bookingBar.getBoundingClientRect().height)}px`);
+}
+reserveBookingBarSpace();
+if ('ResizeObserver' in window) new ResizeObserver(reserveBookingBarSpace).observe(bookingBar);
+else window.addEventListener('resize', reserveBookingBarSpace);

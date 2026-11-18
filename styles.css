@@ -1,6 +1,7 @@
 *{box-sizing:border-box}
 :root{font-family:Arial,Helvetica,sans-serif;color:#1c3042;background:#f6f7f9;--line:#dbe2e8;--muted:#526475}
-body{margin:0;padding-bottom:145px} [hidden]{display:none!important}
+body{margin:0} [hidden]{display:none!important}
+.booking-page { padding-bottom: var(--booking-bar-height, 125px); }
 a{color:#164d7d;text-underline-offset:4px}
 .wrap{width:min(1120px,calc(100% - 40px));margin:auto}
 .skip-link{position:fixed;top:-100px;z-index:30;background:white;padding:16px}.skip-link:focus{top:0}
@@ -231,6 +232,17 @@ button, input { font-family: inherit; }
 .scanner-main #ticket-result:empty { display: none; }
 .scanner-main #ticket-result dd { margin: 0; overflow-wrap: anywhere; }
 .scanner-note { font-size: .875rem; }
+.scanner-main #scanner-message[data-outcome="admitted"] { background: #e7f5ec; border-color: #236441; color: #16462b; font-weight: 700; }
+.scanner-main #scanner-message[data-outcome="already_used"] { background: #fff1dc; border-color: #985c12; color: #663703; font-weight: 700; }
+.festival-hero { overflow: hidden; background: #132c56; }
+.festival-hero-slides { position: relative; overflow: hidden; }
+.festival-hero .countdown-banner { transition: transform 360ms ease; }
+.festival-hero-poster { position: absolute; inset: 0; display: grid; place-items: center; padding-bottom: 34px; background: #132c56; transform: translateX(100%); transition: transform 360ms ease; }
+.festival-hero-poster img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.festival-hero[data-slide="offer"] .countdown-banner { transform: translateX(-100%); }
+.festival-hero[data-slide="offer"] .festival-hero-poster { transform: translateX(0); }
+.festival-hero-poster:focus-visible { outline-offset: -5px; }
+.booking-offer { margin: 0 0 12px; padding: 9px 12px; border-inline-start: 3px solid #bd7e21; border-radius: 6px; background: #fff5e5; color: #49320f; font-size: .875rem; line-height: 1.5; }
 #review { padding: clamp(16px, 4vw, 28px); }
 #review h2 { margin-block: 0 12px; }
 #review-total { background: #eef4fa; padding: 12px; border-radius: 8px; }
@@ -355,8 +367,85 @@ button, input { font-family: inherit; }
 .admin-record dd { margin: 0; overflow-wrap: anywhere; }
 .admin-actions { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
 .admin-actions button { min-height: 44px; }
+.admin-search { border-color: #a3b7c9; background: #fff; }
+.admin-search label { flex-basis: 100%; font-weight: 700; }
+.admin-search input { flex: 1 1 225px; min-width: 0; }
+.admin-form label > :is(input:not([type=checkbox]), select) { display: block; width: 100%; }
+.admin-shell select { border: 1px solid #8997a5; border-radius: 5px; padding: 8px; min-height: 44px; font: inherit; }
+.admin-report-totals { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.admin-report-totals dd { margin: 0; font-weight: 700; }
+#admin-daily-attendance h2 { margin-block: 0 6px; }
+#attendance-status { margin: 0 0 12px; font-size: .85rem; color: #44576b; }
+.attendance-card { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #f5f8fc; }
+.attendance-card h3 { margin: 0; font-size: 1rem; }
+.attendance-card dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 12px; margin: 10px 0; }
+.attendance-card dd { margin: 0; font-weight: 700; }
+.attendance-card progress { display: block; width: 100%; accent-color: #186047; }
+#admin-operations { margin-top: 16px; }
+.admin-page, .scanner-main, #registration { min-width: 0; }
+.admin-form { width: 100%; min-width: 0; }
+.admin-form label, .admin-toolbar label { min-width: 0; overflow-wrap: anywhere; }
+.admin-form label > :is(input:not([type=checkbox]), select) { margin-top: 4px; }
+.admin-page input, .admin-page select, .scanner-main input, #booking .fields input { font-size: 1rem; }
+.admin-form h2, .admin-form p, .admin-form .admin-toolbar { margin: 0; }
+.admin-form .admin-toolbar { padding-top: 4px; }
+.admin-form [role=status]:empty, #spot-result:empty, .fields :is(.eligibility, .field-error):empty, #admin-report-status:empty { display: none; }
+.spot-confirmation { display: flex; align-items: flex-start; gap: 8px; }
+.spot-confirmation input { min-height: 0; padding: 0; }
+#spot-price { color: #16462b; font-weight: 700; }
+#admin-staff-list select { max-width: 100%; display: block; }
+#admin-spot, #admin-edit, #review { max-height: min(88vh, 88dvh); }
+#admin-spot .admin-form, #admin-edit .admin-form { max-width: none; }
+#admin-spot button[type=submit], #admin-edit button[type=submit] { background: #123e63; color: #fff; }
+@media (min-width: 541px) {
+  #admin-spot-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #admin-spot-form > :not(label), #admin-spot-form > :is(.spot-confirmation, #spot-reference) { grid-column: 1 / -1; }
+}
+#scan-panel button { margin: 0; }
+.scanner-main #camera-stop { margin-top: 8px; }
+.scanner-main #qr-photo { min-height: 44px; padding: 7px; }
+.scanner-main #qr-photo::file-selector-button { margin-right: 8px; }
 @media (max-width: 540px) {
   .admin-shell .policy-header { padding-inline: 12px; gap: 12px; }
-  #admin-search label { flex-basis: 100%; }
-  #admin-search input { flex: 1; min-width: 0; }
+  .admin-page, .booking-page #registration, .summary-inner { width: calc(100% - 24px); }
+  .admin-page { padding-block: 14px; }
+  .admin-page h1 { margin-bottom: 10px; }
+  .admin-page .panel, .admin-record { padding: 12px; }
+  .admin-page .panel { margin-top: 12px; }
+  .admin-page #admin-login { margin: 12px auto; }
+  .admin-toolbar { gap: 8px; margin-block: 10px; }
+  .admin-toolbar button { padding-inline: 12px; }
+  #admin-dashboard > .admin-toolbar h2 { flex-basis: 100%; }
+  #admin-search { display: grid; grid-template-columns: 1fr 1fr; }
+  #admin-search :is(label, input) { grid-column: 1 / -1; }
+  .admin-days, .admin-results { gap: 8px; }
+  .attendance-card { padding: 10px 12px; }
+  .admin-actions button { flex: 1 1 auto; }
+  #admin-spot, #admin-edit, #review { width: calc(100% - 24px); padding: 14px; }
+  .admin-form .admin-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .admin-form .admin-toolbar button { padding-inline: 9px; }
+  .scanner-main { padding: 12px; }
+  .scanner-card { margin-block: 9px; padding: 12px; }
+  .scanner-card > p, .scanner-intro { margin-bottom: 8px; }
+  .scanner-main #scanner-message { margin-block: 9px; padding: 10px; }
+  .event-page .content-section { padding-block: 22px; }
+  .event-page .event-section { padding-top: 14px; }
+  .event-page .contact-card > div, .event-page .contact-card h3 { padding: 12px; }
+  .event-page .contact-card p { margin-bottom: 8px; }
+  .policy-page .policy > .panel { padding: 14px; }
+  .booking-page #registration { padding-block: 16px; }
+  #booking .panel { padding: 12px; margin-top: 10px; }
+  #booking legend { margin-bottom: 8px; }
+  #booking .options { gap: 7px; }
+  #booking .options label { padding: 9px; }
+  #booking .options strong, #booking .options small { margin-top: 2px; }
+  #booking .participant { margin-top: 8px; }
+  #booking .participant summary { padding: 10px; }
+  #booking .fields { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 10px; }
+  #booking .fields label { gap: 4px; min-width: 0; }
+  #booking .check { margin-top: 10px; }
+  .summary { padding: 8px 0 max(8px, env(safe-area-inset-bottom)); }
+  .summary-inner { gap: 8px; }
+  .summary-inner > :first-child { min-width: 0; overflow-wrap: anywhere; }
+  .summary p { margin-top: 2px; }
 }

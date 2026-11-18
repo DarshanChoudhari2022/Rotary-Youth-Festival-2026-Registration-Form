@@ -22,24 +22,62 @@
       <button disabled>Sign in</button>
     </form>
     <section id="admin-dashboard" hidden>
-      <div class="admin-toolbar"><h2>Attendance by day</h2><button type="button" id="admin-sign-out">Sign out</button></div>
-      <p>Two-day bookings count on both days. Demo bookings are excluded. Paid totals count active passes only.</p>
-      <div id="admin-days" class="admin-days"></div>
-      <h2>Registrations and tickets</h2>
-      <form id="admin-search" class="admin-toolbar">
-        <label for="admin-find">Registration or ticket ID</label>
-        <input id="admin-find" maxlength="64">
+      <section id="admin-daily-attendance" class="panel" hidden aria-labelledby="daily-attendance-title">
+        <h2 id="daily-attendance-title">Daily attendance</h2>
+        <p id="attendance-status">Loading attendance…</p>
+        <div id="attendance-cards" class="admin-days"></div>
+      </section>
+      <div class="admin-toolbar"><h2>Registrations and tickets</h2><button type="button" id="admin-add" hidden>+ Add Participant</button><button type="button" id="admin-sign-out">Sign out</button></div>
+      <form id="admin-search" class="panel admin-toolbar admin-search">
+        <label for="admin-find">Search participants</label>
+        <input id="admin-find" type="search" maxlength="254" placeholder="Name, mobile, email, or ID">
         <button>Search</button>
+        <button id="admin-clear" type="button">Clear</button>
       </form>
       <p id="admin-empty" hidden>No matching registrations.</p>
       <div id="admin-results" class="admin-results" aria-label="Registration results"></div>
       <div class="admin-toolbar"><button type="button" id="admin-previous">Previous</button><span id="admin-page-number"></span><button type="button" id="admin-next">Next</button></div>
+      <details class="panel"><summary>Attendance by day</summary>
+        <p>Two-day bookings count on both days. Demo bookings are excluded. Paid totals count active passes only.</p>
+        <div id="admin-days" class="admin-days"></div>
+      </details>
+      <section id="admin-operations" class="panel" hidden>
+        <div class="admin-toolbar"><h2>Event operations</h2><button id="admin-report-refresh" type="button">Refresh report</button></div>
+        <p id="admin-report-status" role="status"></p>
+        <div id="admin-report"></div>
+        <h3>Staff access</h3>
+        <form id="admin-staff-form" class="admin-form">
+          <label>Staff name <input name="name" maxlength="100" required></label>
+          <label>Staff email <input name="email" type="email" maxlength="254" required></label>
+          <label>Initial password <input name="password" type="password" minlength="12" maxlength="72" autocomplete="new-password" required></label>
+          <label>Role <select name="role"><option value="registration">Registration / cash collection</option><option value="gate">Gate / check-in</option><option value="operations">Event operations</option></select></label>
+          <button type="submit">Create staff account</button>
+        </form>
+        <div id="admin-staff-list"></div>
+      </section>
     </section>
+    <dialog id="admin-spot" aria-labelledby="spot-title">
+      <form id="admin-spot-form" class="admin-form">
+        <h2 id="spot-title">Add Participant</h2>
+        <label>Participant name <input name="name" maxlength="100" required></label>
+        <label>Mobile number <input name="mobile" type="tel" maxlength="20" required></label>
+        <label>Email (optional) <input name="email" type="email" maxlength="254"></label>
+        <label>Date of birth (optional) <input name="dob" type="date" min="0001-01-01"></label>
+        <label>School or college (optional) <input name="school" maxlength="160"></label>
+        <label>Payment mode <select name="mode"><option value="cash">Cash</option><option value="online">Online</option></select></label>
+        <label id="spot-reference" hidden>Verified online payment reference <input name="reference" maxlength="80" pattern="[A-Za-z0-9_\-]{6,80}" disabled></label>
+        <p id="spot-price" aria-live="polite"></p>
+        <label class="spot-confirmation"><input name="payment_confirmed" type="checkbox" required> <span>I confirm that payment was collected.</span></label>
+        <p id="spot-message" role="status"></p>
+        <div id="spot-result"></div>
+        <div class="admin-toolbar"><button type="submit">Register and check in</button><button id="spot-close" type="button">Close</button></div>
+      </form>
+    </dialog>
     <dialog id="admin-edit">
       <form id="admin-edit-form" class="admin-form">
         <h2>Edit participant</h2>
         <label for="edit-first">First name</label><input id="edit-first" name="first_name" maxlength="100" required>
-        <label for="edit-last">Last name</label><input id="edit-last" name="last_name" maxlength="100" required>
+        <label for="edit-last">Last name</label><input id="edit-last" name="last_name" maxlength="100">
         <label for="edit-org">College / organisation</label><input id="edit-org" name="organization" maxlength="160">
         <label for="edit-city">City</label><input id="edit-city" name="city" maxlength="100">
         <p id="edit-message" role="status"></p>

@@ -12,7 +12,7 @@
   <header class="policy-header"><a href="/">Naya Bharat 2047</a></header>
   <main class="scanner-main">
     <h1>Gate verification</h1>
-    <p class="scanner-intro">Check the participant’s identity before confirming admission.</p>
+    <p class="scanner-intro">Scanning a valid ticket checks the participant in. Give them a wristband after confirmation.</p>
     <form id="staff-login" class="scanner-card scanner-form">
       <h2>Staff sign-in</h2>
       <label for="staff-email">Staff email</label>
@@ -40,12 +40,11 @@
         <input id="ticket-token" required maxlength="150" autocomplete="off" spellcheck="false"
           aria-describedby="ticket-token-help" placeholder="RYF26:…">
         <p id="ticket-token-help">Use a QR reader or paste the full decoded QR text.</p>
-        <button class="scanner-secondary">Check ticket</button>
+        <button class="scanner-secondary">Check in with QR reference</button>
       </form>
     </section>
     <p id="scanner-message" role="status">Loading staff access…</p>
     <dl id="ticket-result"></dl>
-    <button id="admit" class="scanner-primary" type="button" hidden>Confirm admission</button>
     <p class="scanner-note">Online verification is required. If it is unavailable, contact the gate supervisor.</p>
   </main>
 </body>
