@@ -30,6 +30,15 @@
   <h1 class="booking-title">Book your tickets</h1>
   <p class="booking-context">21–22 November 2026 · Fergusson College, Pune</p>
   <p class="muted">Choose your visit and save your registration to continue to payment.</p>
+  <details class="panel" id="test-ticket">
+    <summary><strong>₹1 Test Ticket</strong> <span class="muted">· Payment verification only</span></summary>
+    <form id="test-ticket-form">
+      <p>This ticket is for testing the live payment gateway and cannot be used for event admission.</p>
+      <label for="test-ticket-access">Private test booking link or access code</label>
+      <input id="test-ticket-access" type="password" autocomplete="off" maxlength="1200" required>
+      <button type="submit">Open ₹1 test booking</button>
+    </form>
+  </details>
   <form id="booking">
     <section class="panel">
       <fieldset>

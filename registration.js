@@ -7,6 +7,30 @@ if (!window.location.hash) {
 }
 
 const form = document.querySelector('#booking');
+const testTicketForm = document.querySelector('#test-ticket-form');
+const testAccess = document.querySelector('#test-ticket-access');
+const testToken = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/;
+const suppliedTestToken = new URLSearchParams(location.hash.slice(1)).get('test-booking');
+if (suppliedTestToken && testToken.test(suppliedTestToken)) {
+  document.querySelector('#test-ticket').open = true;
+  testAccess.value = suppliedTestToken;
+  history.replaceState(null, '', location.pathname + location.search);
+}
+testAccess.addEventListener('input', () => testAccess.setCustomValidity(''));
+testTicketForm.addEventListener('submit', event => {
+  event.preventDefault();
+  let token = testAccess.value.trim();
+  if (!testToken.test(token)) {
+    try { token = new URLSearchParams(new URL(token).hash.slice(1)).get('test-booking'); }
+    catch { token = null; }
+  }
+  if (!token || !testToken.test(token)) {
+    testAccess.setCustomValidity('Enter the private test booking link or access code.');
+    testAccess.reportValidity();
+    return;
+  }
+  location.assign('/thank-you.html#test-booking=' + encodeURIComponent(token));
+});
 const cards = document.querySelector('#participants');
 const template = document.querySelector('#participant-template');
 const guardian = document.querySelector('#guardian');
