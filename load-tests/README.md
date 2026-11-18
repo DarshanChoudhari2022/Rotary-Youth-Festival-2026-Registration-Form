@@ -43,3 +43,20 @@ Apply migration 202611190017. Configure a scheduler to send GET /api/payment-rec
 After validating that the scheduler runs regularly, optionally set FESTIVAL_ASYNC_PAYMENT_RETURN=true. The hosted browser return then records a reconciliation signal before issuing the existing 303 redirect. The customer can still use the existing verification action for immediate status. Browser payload status and amounts are ignored. Only Easebuzz's transaction lookup and the payment-fulfillment SQL function can settle the booking.
 
 Review worker verification errors and unresolved pending rows where recovery_exhausted_at is set. These rows have completed 24 attempts. Compare with the provider record before any manual action. To roll back asynchronous returns, unset FESTIVAL_ASYNC_PAYMENT_RETURN. Disabling the scheduler stops background checks. Existing checkout and manual verification remain available.
+
+## Ticket PDF worker
+
+Apply migration 202611190018. Schedule authenticated GET /api/ticket-artifacts using the same server-side CRON_SECRET as payment recovery. Set FESTIVAL_TICKET_ARTIFACTS=true in staging. FESTIVAL_TICKET_ARTIFACT_BATCH controls jobs per invocation (default 2, range 1 through 4).
+
+Successful payment, ticket revocation and participant edits enqueue or refresh a booking artifact. The worker uses the same PDF renderer as the customer download endpoint. It stores up to 1.5 MB of PDF data per booking in a service-only database table. Failures retry up to six times and set exhausted_at for review. Previously paid bookings and oversized files can still download on demand. Review database storage usage and agree a retention period for the PDF copies, which contain participant data. Existing customer access and admin permissions are checked before every download.
+
+If the PDF layout or included assets change, increment FESTIVAL_TICKET_TEMPLATE_VERSION so older artifacts are bypassed. To roll back, unset FESTIVAL_TICKET_ARTIFACTS and stop its schedule. The customer download endpoint falls back to the on-demand renderer whenever a current artifact is unavailable.
+
+## Staging rollout order
+
+1. Confirm the staging Supabase and Vercel projects and set up a payment simulator or approved Easebuzz sandbox. Use synthetic bookings.
+2. Apply migrations 014 through 018 in order, skipping migrations already recorded as applied.
+3. Deploy the corresponding commits. Configure server-only CRON_SECRET and a scheduler that supports the required frequency. Start with each worker independently. Set FESTIVAL_ATTENDANCE_TTL_SECONDS=5 and FESTIVAL_TICKET_ARTIFACTS=true for staging.
+4. Verify payment after a closed checkout, duplicate returns, automatic download, download after an edit, revoked ticket denial, and two gates scanning the same ticket. Once payment recovery runs reliably, enable FESTIVAL_ASYNC_PAYMENT_RETURN=true.
+5. Run the sustained k6 tests and compare route timings, queue age, database load and error rates. Do not use real payment traffic for load tests.
+6. Confirm event capacity, reservation duration and late-payment policy before implementing capacity enforcement. Confirm the merchant's webhook signing and retry rules and the approved sender before enabling dedicated webhooks or email.

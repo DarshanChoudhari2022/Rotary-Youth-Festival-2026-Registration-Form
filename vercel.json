@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "public",
   "functions": {
+    "api/ticket-artifacts.js": { "includeFiles": "{fonts/**,assets/ticket-logos.png}" },
     "api/booking.js": { "includeFiles": "{fonts/**,assets/ticket-logos.png}" },
     "api/admin.js": { "includeFiles": "{fonts/**,assets/ticket-logos.png}" }
   },

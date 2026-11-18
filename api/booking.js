@@ -1,3 +1,4 @@
+const { createHash } = require('node:crypto');
 const { timedHandler } = require('../lib/performance');
 const { authorize, db, qr } = require('../lib/tickets');
 const { enabled } = require('../lib/easebuzz');
@@ -63,11 +64,11 @@ module.exports = timedHandler('booking', async (req, res) => {
 });
 
 // Callers must authorize access before invoking this function.
-async function sendBooking(res, id, action, ticketId) {
+async function sendBooking(res, id, action, ticketId, saveArtifact) {
   try {
     const [[booking], [payment]] = await Promise.all([
       db(`registrations?id=eq.${id}&select=id,visit,quantity,amount_paise,status,checkout_test`),
-      db(`festival_payments?registration_id=eq.${id}&revoked_at=is.null`),
+      db(`festival_payments?registration_id=eq.${id}&revoked_at=is.null&select=amount_paise,transaction_id,verified_at`),
     ]);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     const paid = booking.status === 'paid' && payment?.amount_paise === booking.amount_paise;
@@ -78,11 +79,23 @@ async function sendBooking(res, id, action, ticketId) {
     if (action !== 'download') return res.json({ ...booking, status: paid ? 'paid' : 'pending', payment_enabled: enabled() && booking.status === 'pending' });
     if (!paid) return res.status(409).json({ error: 'Tickets are available only after verified payment.' });
     const [allTickets, people] = await Promise.all([
-      db(`festival_tickets?registration_id=eq.${id}&order=position`),
-      db(`registration_participants?registration_id=eq.${id}&order=position`),
+      db(`festival_tickets?registration_id=eq.${id}&order=position&select=id,position,revoked_at`),
+      db(`registration_participants?registration_id=eq.${id}&order=position&select=position,first_name,last_name,mobile,email,date_of_birth,organization,city`),
     ]);
     const tickets = allTickets.filter(ticket => !ticket.revoked_at && (!ticketId || ticket.id === ticketId));
     if (allTickets.length !== booking.quantity || !tickets.length) return res.status(409).json({ error: 'Tickets are unavailable. Please contact event support.' });
+    let fingerprint;
+    if (!ticketId && (saveArtifact || process.env.FESTIVAL_TICKET_ARTIFACTS === 'true')) {
+      fingerprint = createHash('sha256').update(JSON.stringify([
+        1, process.env.FESTIVAL_TICKET_TEMPLATE_VERSION || '1', booking, payment, people,
+        tickets.map(ticket => [ticket.position, qr(ticket.id)]),
+      ])).digest('hex');
+      if (!saveArtifact) {
+        const filter = 'festival_ticket_artifacts?registration_id=eq.' + id + '&fingerprint=eq.' + fingerprint + '&select=pdf_base64';
+        const [artifact] = await db(filter).catch(() => []);
+        if (artifact?.pdf_base64) return sendPdf(res, id, Buffer.from(artifact.pdf_base64, 'base64'));
+      }
+    }
     const doc = new PDFDocument({ size: 'A4', margin: 48, font: ticketFont(), autoFirstPage: !ticketId });
     const chunks = [];
     const completed = new Promise((resolve, reject) => { doc.on('data', c => chunks.push(c)); doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject); });
@@ -120,13 +133,18 @@ async function sendBooking(res, id, action, ticketId) {
     }
     doc.end();
     const pdf = await completed;
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${id}-tickets.pdf"`);
-    return res.end(pdf);
+    if (saveArtifact) await saveArtifact(fingerprint, pdf);
+    return sendPdf(res, id, pdf);
   } catch (error) {
     console.error('Booking request failed', { action: action === 'download' ? 'download' : 'status', type: error.name, code: error.code });
     return res.status(503).json({ error: 'Could not prepare your booking details. Please retry. If payment is verified, do not pay again.' });
   }
+}
+
+function sendPdf(res, id, pdf) {
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename="' + id + '-tickets.pdf"');
+  return res.end(pdf);
 }
 
 module.exports.sendBooking = sendBooking;

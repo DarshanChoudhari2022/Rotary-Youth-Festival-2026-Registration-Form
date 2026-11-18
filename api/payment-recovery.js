@@ -1,14 +1,7 @@
-const { createHash, timingSafeEqual } = require('node:crypto');
+const authorizedWorker = require('../lib/worker-auth');
 const { enabled, reconcile } = require('../lib/easebuzz');
 const { rpc } = require('../lib/staff');
 const { timedHandler, integerSetting } = require('../lib/performance');
-
-function authorized(header) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || typeof header !== 'string') return false;
-  const digest = value => createHash('sha256').update(value).digest();
-  return timingSafeEqual(digest(header), digest('Bearer ' + secret));
-}
 
 async function checkAttempt(attempt) {
   let verified = false;
@@ -27,7 +20,7 @@ async function checkAttempt(attempt) {
 module.exports = timedHandler('payment-recovery', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Use GET.' });
-  if (!authorized(req.headers.authorization)) return res.status(401).json({ error: 'Unauthorized.' });
+  if (!authorizedWorker(req.headers.authorization)) return res.status(401).json({ error: 'Unauthorized.' });
   if (!enabled()) return res.status(503).json({ error: 'Payment recovery is unavailable.' });
   try {
     const concurrency = integerSetting('FESTIVAL_PAYMENT_RECOVERY_BATCH', 4, 1, 16);
