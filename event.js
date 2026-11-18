@@ -29,6 +29,7 @@ const countdownSlide = document.querySelector('#festival-countdown-slide');
 const offerSlide = document.querySelector('#festival-offer-slide');
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const hover = window.matchMedia('(hover: hover)');
+const heroSlideDuration = 3000;
 let heroTimer;
 let heroInView = true;
 
@@ -36,7 +37,7 @@ function scheduleHero() {
   clearTimeout(heroTimer);
   if (heroInView && !motion.matches && !document.hidden && !hero.contains(document.activeElement)
       && !(hover.matches && hero.matches(':hover'))) {
-    heroTimer = setTimeout(toggleHero, 5000);
+    heroTimer = setTimeout(toggleHero, heroSlideDuration);
   }
 }
 
