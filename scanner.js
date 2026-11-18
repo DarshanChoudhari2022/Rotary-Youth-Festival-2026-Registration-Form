@@ -30,7 +30,7 @@ async function check(action) {
     const response = await fetch('/api/scanner', { method: 'POST', headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ticket: token }) });
     const result = await response.json(); if (!response.ok) throw new Error(result.error);
     const outcomes = { valid: 'Valid ticket. Check identity, then confirm admission.', admitted: 'Admission recorded.', already_used: 'Already admitted today. Do not admit again.', wrong_day: 'Not valid for today. Do not admit.', invalid_or_revoked: 'Unpaid or revoked ticket. Do not admit.', unknown: 'Unknown ticket. Do not admit.' };
-    message.textContent = outcomes[result.status] || 'Unable to verify. Do not admit.';
+    message.textContent = result.status === 'test_ticket' ? 'Payment test ticket. Do not admit.' : outcomes[result.status] || 'Unable to verify. Do not admit.';
     for (const [label, value] of [['Participant', result.name], ['Visit', result.visit], ['Ticket', result.ticket_id], ['Admission time', result.admitted_at]]) {
       if (!value) continue;
       const term = document.createElement('dt'), detail = document.createElement('dd'); term.textContent = label; detail.textContent = value; $('#ticket-result').append(term, detail);

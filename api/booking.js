@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
   try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; id = authorize(body?.access); }
   catch { return res.status(401).json({ error: 'Booking access is missing or expired. Contact support with your registration ID.' }); }
   try {
-    const [booking] = await db(`registrations?id=eq.${id}&select=id,visit,quantity,amount_paise,status`);
+    const [booking] = await db(`registrations?id=eq.${id}&select=id,visit,quantity,amount_paise,status,checkout_test`);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     const [payment] = await db(`festival_payments?registration_id=eq.${id}&revoked_at=is.null`);
     const paid = booking.status === 'paid' && payment?.amount_paise === booking.amount_paise;
@@ -31,6 +31,7 @@ module.exports = async (req, res) => {
     for (const ticket of tickets) {
       const person = people.find(p => p.position === ticket.position);
       doc.addPage().fontSize(26).text('Naya Bharat 2047').fontSize(14).text('Participant entry ticket').moveDown();
+      if (booking.checkout_test) doc.text('PAYMENT TEST - NOT VALID FOR EVENT ADMISSION').moveDown();
       doc.fontSize(18).text(`${person.first_name} ${person.last_name}`).fontSize(12).moveDown();
       doc.text(`Visit: ${booking.visit === 'both' ? '21 & 22' : booking.visit} November 2026\nVenue: Fergusson College, Pune\nRegistration: ${id}\nTicket: ${ticket.id}`);
       doc.image(await QRCode.toBuffer(qr(ticket.id), { width: 300, errorCorrectionLevel: 'M' }), 48, 260, { width: 240 });

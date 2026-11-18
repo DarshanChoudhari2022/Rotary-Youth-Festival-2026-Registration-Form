@@ -58,13 +58,30 @@ async function refresh() {
   } catch (error) { message.textContent = error.message; download.hidden = true; pay.hidden = true; }
   finally { button.disabled = false; }
 }
-if (/^RYF26-[0-9A-F]{8}$/.test(saved?.registration_id) && Number.isSafeInteger(saved.amount_paise)) {
+function showBooking() {
   document.querySelector('#receipt-heading').textContent = 'Thank you for registering';
   document.querySelector('#receipt-id').textContent = saved.registration_id;
   document.querySelector('#receipt-total').textContent = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(saved.amount_paise / 100);
   document.querySelector('#registration-receipt').hidden = false;
   document.querySelector('#receipt-empty').hidden = true;
   if (saved.access) refresh();
+}
+const privateAccess = new URLSearchParams(location.hash.slice(1)).get('test-booking');
+if (privateAccess) {
+  history.replaceState(null, '', location.pathname + location.search);
+  fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access: privateAccess, action: 'status' }) })
+    .then(async response => {
+      if (!response.ok) throw new Error();
+      const result = await response.json();
+      if (!result.checkout_test) throw new Error();
+      saved = { registration_id: result.id, amount_paise: result.amount_paise, access: privateAccess };
+      sessionStorage.setItem('festival-registration', JSON.stringify(saved));
+      showBooking();
+    })
+    .catch(() => { document.querySelector('#receipt-empty').textContent = 'This test booking link is unavailable or has expired.'; });
+} else if (/^RYF26-[0-9A-F]{8}$/.test(saved?.registration_id) && Number.isSafeInteger(saved.amount_paise)) {
+  showBooking();
 }
 download.addEventListener('click', downloadTickets);
 document.querySelector('#refresh-booking').addEventListener('click', refresh);

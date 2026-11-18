@@ -11,6 +11,8 @@ module.exports = async (req, res) => {
     try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; ticket = verifyQr(body?.ticket); }
     catch { return res.status(400).json({ error: 'Invalid or altered ticket QR.' }); }
     if (!['inspect', 'admit'].includes(body.action)) return res.status(400).json({ error: 'Invalid action.' });
+    const [record] = await db(`festival_tickets?id=eq.${ticket}&select=registration_participants(registrations(checkout_test))`);
+    if (record?.registration_participants?.registrations?.checkout_test) return res.json({ status: 'test_ticket' });
     return res.json(await db('rpc/inspect_festival_ticket', { method: 'POST', body: JSON.stringify({ p_ticket: ticket, p_staff: user.id, p_admit: body.action === 'admit' }) }));
   } catch { return res.status(503).json({ error: 'Verification unavailable. Do not admit without verification; contact the gate supervisor.' }); }
 };
