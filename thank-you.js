@@ -57,7 +57,7 @@ async function refresh() {
     pay.hidden = !result.payment_enabled;
     message.textContent = result.status === 'paid' ? (
       result.visit === 'demo' || result.checkout_test ? 'Demo payment verified. Your PDF is for testing only.' : 'Your booking is confirmed. Keep your tickets ready for entry.')
-      : result.payment_enabled ? 'Pay securely with Easebuzz. If you just paid, check payment status before trying again.'
+      : result.payment_enabled ? 'Complete your payment to receive your tickets. If you just paid, check your payment status before trying again.'
       : 'Online payment is currently unavailable. Your registration is saved.';
     if (result.status === 'paid' && !sessionStorage.getItem('downloaded-' + saved.registration_id)) {
       await downloadTickets();

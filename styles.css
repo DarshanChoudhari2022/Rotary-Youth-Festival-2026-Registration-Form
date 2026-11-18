@@ -294,3 +294,13 @@ button, input { font-family: inherit; }
   .event-tabs { flex-wrap: wrap; gap: 0 16px; }
   #registration { padding-top: 28px; }
 }
+.admin-page { padding-block: 32px; }
+.admin-form { display: grid; gap: 10px; max-width: 440px; }
+.admin-form input, .admin-toolbar input { min-height: 44px; padding: 8px 12px; border: 1px solid #8997a5; border-radius: 5px; font: inherit; }
+.admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 16px; }
+.admin-toolbar h2 { margin: 0 auto 0 0; }
+.admin-days { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 14px; }
+.admin-table { overflow: auto; }
+.admin-table table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.admin-table th, .admin-table td { text-align: left; padding: 10px; border-bottom: 1px solid var(--line); }
+.admin-table button { margin: 2px; }

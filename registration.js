@@ -222,7 +222,7 @@ save.addEventListener('click', async () => {
     }
     let destination = '/thank-you.html';
     if (result.access && result.status === 'pending') {
-      saveStatus.textContent = 'Registration saved. Opening Easebuzz checkout…';
+      saveStatus.textContent = 'Opening secure checkout…';
       try {
         const checkout = await fetch('/api/payment', {
           method: 'POST',

@@ -35,6 +35,18 @@ test('database fulfillment and admission invariants', async () => {
   assert.equal(demo.amount_paise,100);
   await db.query('select fulfill_festival_payment($1,$2,$3)',[demo.registration_id,'demo-payment',100]);
   await assert.rejects(db.query('select * from create_festival_registration($1,$2,$3,$4)',[crypto.randomUUID(),'demo',JSON.stringify(people.slice(0,2)),false]));
+  await db.query('update registration_participants set date_of_birth=$1 where registration_id=$2 and position=1', ['2010-11-22', booking.registration_id]);
+  const snapshot = async () => (await db.query("select festival_admin_dashboard(0, '') result")).rows[0].result;
+  let overview = await snapshot();
+  assert.deepEqual(overview.days.map(d => [d.registrations,d.participants,d.paid_under_16]), [[1,10,1],[1,10,0]]);
+  const admin = crypto.randomUUID();
+  assert.equal((await db.query('select festival_admin_edit($1,$2,1,$3,$4,$5,$6) as edited',
+    [admin,booking.registration_id,'Corrected','Participant','College','Pune'])).rows[0].edited,true);
+  assert.equal((await db.query('select festival_admin_revoke($1,$2) as revoked',[admin,tickets[1].id])).rows[0].revoked,true);
+  overview = await snapshot();
+  assert.deepEqual(overview.days.map(d => d.paid),[9,9]);
+  assert.equal(overview.participants.find(p => p.booking_id === booking.registration_id && p.position === 1).first_name,'Corrected');
+  assert.equal((await db.query('select * from festival_admin_audit')).rows.length,2);
   const staff = crypto.randomUUID();
   assert.equal((await db.query('select inspect_festival_ticket($1,$2,true) result',[tickets[0].id,staff])).rows[0].result.status,'wrong_day');
   // Simulate event date only in isolated test database, never production.
@@ -48,6 +60,7 @@ test('database fulfillment and admission invariants', async () => {
   await db.query('update festival_tickets set revoked_at=now() where id=$1',[tickets[0].id]);
   assert.equal((await inspect(true)).status,'invalid_or_revoked');
   await db.exec('set role anon');
+  await assert.rejects(db.query("select festival_admin_dashboard(0, '')"));
   await assert.rejects(db.query('select * from festival_tickets'));
   await assert.rejects(db.query('select fulfill_festival_payment($1,$2,$3)',[booking.registration_id,'test-payment',400000]));
  } finally { await db.close(); }

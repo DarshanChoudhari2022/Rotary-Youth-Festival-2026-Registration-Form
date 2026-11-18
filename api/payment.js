@@ -36,18 +36,22 @@ module.exports = async (req, res) => {
   }
   if (!['start', 'verify'].includes(body.action)) return res.status(400).json({ error: 'Invalid payment action.' });
   try {
-    const booking = await loadBooking(id);
+    const filter = `${attemptTable}?registration_id=eq.${id}`;
+    const [booking, [existing], [person]] = await Promise.all([
+      loadBooking(id),
+      db(filter),
+      body.action === 'start'
+        ? db(`registration_participants?registration_id=eq.${id}&position=eq.1&select=first_name,email,mobile`)
+        : [],
+    ]);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     if (booking.status === 'paid') return res.json({ verified: true });
-    const filter = `${attemptTable}?registration_id=eq.${id}`;
-    const [existing] = await db(filter);
     if (existing && await reconcile(existing, booking)) return res.json({ verified: true });
     if (body.action === 'verify') return res.json({ verified: false });
     if (existing) {
       if (existing.checkout_key) return res.json({ checkout_url: checkoutUrl(existing.checkout_key) });
       return res.status(409).json({ error: 'Checkout is being prepared or could not be confirmed. Check payment status before trying again or contact support.' });
     }
-    const [person] = await db(`registration_participants?registration_id=eq.${id}&position=eq.1&select=first_name,email,mobile`);
     if (!person) return res.status(409).json({ error: 'Booking contact details are unavailable.' });
     const [attempt] = await db(attemptTable + '?on_conflict=registration_id', {
       method: 'POST',
@@ -59,7 +63,7 @@ module.exports = async (req, res) => {
     const attemptFilter = filter + `&txnid=eq.${attempt.txnid}`;
     if (!checkoutKey) {
       await db(attemptFilter, { method: 'DELETE' });
-      return res.status(502).json({ error: 'Easebuzz could not start checkout. Please retry or contact support.' });
+      return res.status(502).json({ error: 'Secure checkout could not open. Please try again or contact booking support.' });
     }
     await db(attemptFilter, { method: 'PATCH', body: JSON.stringify({ checkout_key: checkoutKey }) });
     return res.json({ checkout_url: checkoutUrl(checkoutKey) });

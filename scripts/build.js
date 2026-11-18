@@ -8,5 +8,5 @@ function copy(source, destination) {
   } else fs.copyFileSync(source, destination);
 }
 for (const name of fs.readdirSync('.')) {
-  if (/\.(html|css)$/.test(name) || ['event.js', 'registration.js', 'thank-you.js', 'scanner.js', 'robots.txt', 'sitemap.xml', 'assets', 'policies'].includes(name)) copy(name, path.join('public', name));
+  if (/\.(html|css)$/.test(name) || ['event.js', 'registration.js', 'thank-you.js', 'scanner.js', 'admin.js', 'robots.txt', 'sitemap.xml', 'assets', 'policies'].includes(name)) copy(name, path.join('public', name));
 }
