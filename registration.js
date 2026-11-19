@@ -125,7 +125,7 @@ function updateBooking() {
     }
     const eligible = visit && !isDemo && eligibleForOffer(dob);
     if (eligible) discountCount++;
-    card.querySelector('.eligibility').textContent = eligible ? '50% off + free food coupon.' : '';
+    card.querySelector('.eligibility').textContent = eligible ? '₹100 per day · Free food coupon included.' : '';
     card.querySelector('.participant-status').textContent =
       inputs.every(input => input.validity.valid) ? '✓ Completed' : '';
   }

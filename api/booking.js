@@ -82,7 +82,7 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
     let fingerprint;
     if (!ticketId && (saveArtifact || process.env.FESTIVAL_TICKET_ARTIFACTS === 'true')) {
       fingerprint = createHash('sha256').update(JSON.stringify([
-        1, process.env.FESTIVAL_TICKET_TEMPLATE_VERSION || '1', booking, payment, people,
+        2, process.env.FESTIVAL_TICKET_TEMPLATE_VERSION || '1', booking, payment, people,
         tickets.map(ticket => [ticket.position, qr(ticket.id)]),
       ])).digest('hex');
       if (!saveArtifact) {
@@ -120,6 +120,9 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
       detail(doc, isDemo ? 'Age on payment date' : 'Age on first booked day', participantAge(person.date_of_birth, ageDate));
       if (person.organization) detail(doc, 'College / organisation', person.organization);
       if (person.city) detail(doc, 'City', person.city);
+      if (!isDemo && person.date_of_birth >= '2010-11-01') {
+        detail(doc, 'Food coupon', 'FREE food coupon included. Collect at the designated counter.');
+      }
       if (!isDemo) detail(doc, 'Venue', 'Fergusson College, Pune');
       detail(doc, 'Registration / ticket ID', `${id} / ${ticket.id}`);
       const qrImage = await QRCode.toBuffer(qr(ticket.id), { width: 300, errorCorrectionLevel: 'M' });

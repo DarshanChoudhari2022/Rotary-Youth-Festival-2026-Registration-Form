@@ -9,7 +9,7 @@ function validate(body) {
       || !Object.hasOwn(FIRST_VISIT, visit) || typeof visit !== 'string'
       || !Array.isArray(participants) || participants.length < 1 || ((participants.length > 10 || body.groupInvite !== undefined)
           && !require('../lib/tickets').validGroupInvite(body.groupInvite, requestId))
-      || (visit === 'demo' && participants.length !== 1)
+      || visit === 'demo'
       || !['accuracy', 'policies', 'refund', 'food'].every(key => declarations?.[key] === true)) {
     throw new Error('Check the visit, participant count and registration declarations.');
   }
