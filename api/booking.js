@@ -55,6 +55,29 @@ function detail(doc, label, value) {
   doc.fillColor('#526475').fontSize(9).text(label);
   doc.fillColor('#14263D').fontSize(12).text(value).moveDown(0.45);
 }
+function bookingFares(booking, people, isDemo) {
+  const total = booking.amount_paise / 100;
+  const regular = booking.visit === 'both' ? 400 : 200;
+  const youth = people.filter(person => person.date_of_birth >= '2010-11-01').length;
+  const count = booking.quantity;
+  const standardOnly = total === count * regular;
+  const reconciled = !isDemo && people.length === count &&
+    (standardOnly || total === (count - youth) * regular + youth * regular / 2);
+  const discounted = standardOnly ? 0 : youth;
+  const lines = [];
+  if (reconciled && count > discounted) lines.push(`${count - discounted} standard × INR ${regular}`);
+  if (reconciled && discounted) lines.push(`${discounted} youth × INR ${regular / 2}`);
+  return {
+    breakdown: lines.join(' + '),
+    total: `Booking paid: INR ${total} for ${count} ${count === 1 ? 'participant' : 'participants'}`,
+    ticket(person) {
+      if (!reconciled) return '';
+      return discounted && person.date_of_birth >= '2010-11-01'
+        ? `This ticket: INR ${regular / 2} (50% youth discount)`
+        : `This ticket: INR ${regular} (standard fare)`;
+    },
+  };
+}
 module.exports = timedHandler('booking', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
@@ -82,7 +105,7 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
     let fingerprint;
     if (!ticketId && (saveArtifact || process.env.FESTIVAL_TICKET_ARTIFACTS === 'true')) {
       fingerprint = createHash('sha256').update(JSON.stringify([
-        2, process.env.FESTIVAL_TICKET_TEMPLATE_VERSION || '1', booking, payment, people,
+        3, process.env.FESTIVAL_TICKET_TEMPLATE_VERSION || '1', booking, payment, people,
         tickets.map(ticket => [ticket.position, qr(ticket.id)]),
       ])).digest('hex');
       if (!saveArtifact) {
@@ -97,12 +120,14 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
     const logos = doc.openImage(path.join(__dirname, '../assets/ticket-logos.png'));
     const chunks = [];
     const completed = new Promise((resolve, reject) => { doc.on('data', c => chunks.push(c)); doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject); });
+    const fares = bookingFares(booking, people, isDemo);
     if (!ticketId) {
       heading(doc, 'Payment acknowledgement', logos);
       detail(doc, 'Registration', id);
       detail(doc, 'Amount paid', `INR ${(booking.amount_paise / 100).toFixed(2)}`);
       detail(doc, 'Ticket coverage', visitLabel);
       detail(doc, 'Participants', String(booking.quantity));
+      if (fares.breakdown) detail(doc, 'Fare breakdown', fares.breakdown);
       detail(doc, 'Payment reference', payment.transaction_id);
       detail(doc, 'Verified at', payment.verified_at);
       doc.text('This is a payment acknowledgement, not a GST tax invoice.');
@@ -128,9 +153,12 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
       const qrImage = await QRCode.toBuffer(qr(ticket.id), { width: 300, errorCorrectionLevel: 'M' });
       const qrTop = doc.y;
       doc.image(qrImage, 48, qrTop, { width: 112 });
+      doc.fillColor('#14263D').fontSize(10).text(
+        [fares.ticket(person), fares.total, fares.breakdown].filter(Boolean).join('\n'),
+        176, qrTop + 3).moveDown(0.4);
       doc.fillColor('#526475').fontSize(10).text(isDemo
         ? 'Scan this QR to test the gate scanner. Support: +91 90110 23332.'
-        : 'Present this QR and your identification. One admission per booked day. Support: +91 90110 23332.', 176, qrTop + 16);
+        : 'Present this QR and your identification. One admission per booked day. Support: +91 90110 23332.');
     }
     doc.end();
     const pdf = await completed;
