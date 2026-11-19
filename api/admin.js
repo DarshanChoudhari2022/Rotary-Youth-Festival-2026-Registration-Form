@@ -40,7 +40,7 @@ module.exports = timedHandler('admin', async (req, res) => {
       const mode = body.mode;
       const reference = string(body.reference);
       const date = dob ? new Date(dob) : null;
-      if (!uuid.test(body.request_id || '') || !name || name.length > 100 || !/^[6-9]\d{9}$/.test(mobile)
+      if (!uuid.test(body.request_id || '') || !name || name.length > 100 || (mobile && !/^[6-9]\d{9}$/.test(mobile))
           || (email && (email.length > 254 || !emailPattern.test(email))) || school.length > 160
           || (dob && (!/^\d{4}-\d{2}-\d{2}$/.test(dob) || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== dob))
           || !['cash', 'online'].includes(mode) || body.payment_confirmed !== true
@@ -53,7 +53,7 @@ module.exports = timedHandler('admin', async (req, res) => {
       }
       return res.json(await rpc(advance ? 'festival_counter_register_visit' : 'festival_counter_register', {
         ...(advance ? { p_visit: body.visit } : {}), p_request: body.request_id, p_staff: id,
-        p_name: name, p_mobile: '+91' + mobile, p_email: email || null, p_dob: dob || null,
+        p_name: name, p_mobile: mobile ? '+91' + mobile : null, p_email: email || null, p_dob: dob || null,
         p_school: school, p_mode: mode, p_reference: mode === 'online' ? reference : null }));
     }
     if (body?.action === 'operations' && role === 'super') {

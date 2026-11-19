@@ -16,6 +16,9 @@
   <p>Thank you for registering for Naya Bharat 2047. Keep this reference for follow-up.</p>
   <dl><dt>Registration ID</dt><dd id="receipt-id"></dd><dt>Booking total</dt><dd id="receipt-total"></dd><dt>Status</dt><dd id="payment-status">Payment pending</dd></dl>
   <p id="booking-message" role="status">Online payment will be available soon. A saved registration is not an entry ticket.</p>
+  <label id="payer-contact" hidden>Payer’s mobile number for online payment
+    <input id="payer-mobile" type="tel" autocomplete="tel-national" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" placeholder="10-digit mobile number" required>
+  </label>
   <button id="start-payment" type="button" hidden>Complete payment</button>
   <button id="refresh-booking" type="button">Check payment status</button>
   <button id="download-tickets" type="button" hidden>Download tickets and paid receipt</button>

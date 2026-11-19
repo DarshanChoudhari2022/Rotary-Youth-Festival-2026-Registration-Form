@@ -21,7 +21,7 @@ test('advance cash issues a paid pass without admission; existing large bookings
     assert.deepEqual(await collect(cash), issued);
     await assert.rejects(collect([...cash.slice(0,9), '22']), /already been used/);
     assert.equal((await db.query('select status from registrations where id=$1',[issued.booking_id])).rows[0].status,'paid');
-    const people = Array.from({length: 45}, (_, i) => ({first:'Class',last:'Student',mobile:'+9191234500'+String(i).padStart(2,'0'),dob:i ? '2011-01-01':'2000-01-01',email:'class@example.test'}));
+    const people = Array.from({length: 45}, (_, i) => ({first:'Class',last:'Student',mobile:i % 2 ? cash[3] : null,dob:i ? '2011-01-01':'2000-01-01',email:'class@example.test'}));
     const args = [randomUUID(), '21', JSON.stringify(people), true];
     const book = async () => (await db.query('select * from create_festival_registration($1,$2,$3,$4)',args)).rows[0];
     const group = await book();

@@ -95,17 +95,11 @@ function updateBooking() {
   const isDemo = form.elements.visit.value === 'demo';
   let hasMinor = false;
   let discountCount = 0;
-  const mobiles = new Set();
   for (const card of cards.children) {
     const inputs = [...card.querySelectorAll('input')];
     for (const input of inputs.filter(input => ['first', 'last'].includes(input.name))) {
       input.setCustomValidity(input.value && !input.value.trim() ? 'Enter a name.' : '');
     }
-    const mobile = card.querySelector('[name=mobile]');
-    const duplicate = mobile.value && mobiles.has(mobile.value);
-    mobile.setCustomValidity(duplicate ? 'Use a different number for each participant.'
-      : (mobile.dataset.registered === mobile.value ? 'This number is already registered. Use a different number or call 9011023332.' : ''));
-    if (mobile.value) mobiles.add(mobile.value);
     const dob = card.querySelector('[name=dob]');
     dob.max = today;
     const days = visit?.days ?? [21];
@@ -193,7 +187,7 @@ form.addEventListener('submit', event => {
     name.textContent = `${fields.first} ${fields.last}`;
     const details = document.createElement('dl');
     for (const [label, value] of [
-      ['Mobile', `+91 ${fields.mobile}`], ['Email', fields.email],
+      ['Mobile', fields.mobile && `+91 ${fields.mobile}`], ['Email', fields.email],
       ['Date of birth', fields.dob.split('-').reverse().join('/')],
       ['College / organisation', fields.organization], ['City', fields.city],
     ]) {
@@ -244,13 +238,8 @@ save.addEventListener('click', async () => {
       const card = cards.children[result.participant - 1];
       const field = card && [...card.querySelectorAll('input')].find(input => input.name === result.field);
       if (field) {
-        if (result.code === 'MOBILE_ALREADY_REGISTERED') {
-          field.dataset.registered = field.value;
-          updateBooking();
-        } else {
-          field.setCustomValidity(result.error);
-          field.addEventListener('input', () => field.setCustomValidity(''), { once: true, capture: true });
-        }
+        field.setCustomValidity(result.error);
+        field.addEventListener('input', () => field.setCustomValidity(''), { once: true, capture: true });
         review.close();
         card.open = true;
         field.focus();
@@ -260,6 +249,7 @@ save.addEventListener('click', async () => {
       saveStatus.textContent = result.error || 'Registration could not be saved. Please retry.';
       return;
     }
+    result.needsPayerMobile = !reviewedBooking.participants[0].mobile;
     savedBooking = result;
     renderSaveStatus();
     try {
@@ -269,7 +259,7 @@ save.addEventListener('click', async () => {
       return;
     }
     let destination = '/thank-you.html';
-    if (result.access && result.status === 'pending') {
+    if (result.access && result.status === 'pending' && !result.needsPayerMobile) {
       saveStatus.textContent = 'Opening secure checkout…';
       try {
         const checkout = await fetch('/api/payment', {

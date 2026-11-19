@@ -61,6 +61,12 @@ module.exports = timedHandler('payment', async (req, res) => {
       return res.status(409).json({ error: 'Checkout is being prepared or could not be confirmed. Check payment status before trying again or contact support.' });
     }
     if (!person) return res.status(409).json({ error: 'Booking contact details are unavailable.' });
+    if (!person.mobile) {
+      if (typeof body.payerMobile !== 'string' || !/^[6-9]\d{9}$/.test(body.payerMobile)) {
+        return res.status(422).json({ code: 'PAYER_MOBILE_REQUIRED', error: 'Enter the payer’s mobile number for checkout.' });
+      }
+      person.mobile = '+91' + body.payerMobile;
+    }
     const [attempt] = await db(attemptTable + '?on_conflict=registration_id', {
       method: 'POST',
       headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },

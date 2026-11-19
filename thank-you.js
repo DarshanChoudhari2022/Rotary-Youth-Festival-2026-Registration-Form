@@ -3,18 +3,26 @@ try { saved = JSON.parse(sessionStorage.getItem('festival-registration')); } cat
 const message = document.querySelector('#booking-message');
 const download = document.querySelector('#download-tickets');
 const pay = document.querySelector('#start-payment');
+const payerContact = document.querySelector('#payer-contact');
+const payerMobile = document.querySelector('#payer-mobile');
 async function payment(action) {
   const response = await fetch('/api/payment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ access: saved.access, action }),
+    body: JSON.stringify({ access: saved.access, action, ...(action === 'start' && !payerContact.hidden ? { payerMobile: payerMobile.value } : {}) }),
   });
   const result = await response.json();
+  if (result.code === 'PAYER_MOBILE_REQUIRED') {
+    saved.needsPayerMobile = true;
+    payerContact.hidden = false;
+    payerMobile.focus();
+  }
   if (!response.ok) throw new Error(result.error);
   return result;
 }
 
 pay.addEventListener('click', async () => {
+  if (!payerContact.hidden && !payerMobile.reportValidity()) return;
   pay.disabled = true;
   try {
     const result = await payment('start');
@@ -55,6 +63,7 @@ async function refresh() {
     document.querySelector('#payment-status').textContent = result.status === 'paid' ? 'Payment verified' : 'Payment pending';
     download.hidden = result.status !== 'paid';
     pay.hidden = !result.payment_enabled;
+    payerContact.hidden = pay.hidden || !saved.needsPayerMobile;
     message.textContent = result.status === 'paid' ? (
       result.visit === 'demo' || result.checkout_test ? 'Demo payment verified. Your PDF is for testing only.' : 'Your booking is confirmed. Keep your tickets ready for entry.')
       : result.payment_enabled ? 'Complete your payment to receive your tickets. If you just paid, check your payment status before trying again.'

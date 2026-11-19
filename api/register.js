@@ -15,7 +15,6 @@ function validate(body) {
 
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   let hasMinor = false;
-  const mobiles = new Set();
   const people = participants.map((person, index) => {
     const { first, last, email, mobile, dob, organization = "", city = "" } = person ?? {};
     const date = typeof dob === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dob)
@@ -29,10 +28,9 @@ function validate(body) {
         invalid(field, `Enter a ${label} of up to 100 characters.`);
       }
     }
-    if (typeof mobile !== 'string' || !/^[6-9]\d{9}$/.test(mobile)) {
+    if (mobile != null && mobile !== '' && (typeof mobile !== 'string' || !/^[6-9]\d{9}$/.test(mobile))) {
       invalid('mobile', 'Enter a 10-digit Indian mobile number beginning with 6, 7, 8 or 9.');
     }
-    if (mobiles.has(mobile)) invalid('mobile', 'Use a different mobile number for each participant.');
     if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+$/.test(email)) {
       invalid('email', 'Enter a valid email address.');
     }
@@ -44,9 +42,8 @@ function validate(body) {
       invalid('organization', 'Use up to 160 characters for college or organization.');
     }
     if (typeof city !== 'string' || city.length > 100) invalid('city', 'Use up to 100 characters for city.');
-    mobiles.add(mobile);
     hasMinor ||= dob > FIRST_VISIT[visit].replace('2026', '2008');
-    return { first: first.trim(), last: last.trim(), mobile: '+91' + mobile, email, dob, organization: organization.trim(), city: city.trim() };
+    return { first: first.trim(), last: last.trim(), mobile: mobile ? '+91' + mobile : null, email, dob, organization: organization.trim(), city: city.trim() };
   });
 
   if (hasMinor && guardianConsent !== true) {
@@ -89,13 +86,6 @@ module.exports = timedHandler('register', async function register(req, res) {
       return res.status(422).json({ error: 'Only 22 November tickets can be booked today. Return to registration and select 22 November.' });
     }
     if (result.status === 409) {
-      const conflict = await result.json();
-      const participant = Number(conflict.details);
-      if (conflict.message === 'Mobile already registered'
-          && Number.isInteger(participant) && participant >= 1 && participant <= payload.p_participants.length) {
-        return res.status(409).json({ participant, field: 'mobile', code: 'MOBILE_ALREADY_REGISTERED',
-          error: `Participant ${participant}: this mobile number is already registered. Enter a different number or contact support at 9011023332.` });
-      }
       return res.status(409).json({ error: 'This submission reference has already been used. Change your booking details and review again.' });
     }
     if (!result.ok) throw new Error('Supabase rejected the request');
