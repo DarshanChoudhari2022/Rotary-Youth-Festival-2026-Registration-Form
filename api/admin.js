@@ -6,6 +6,24 @@ const { uuid, staffRoles, rpc, staffFor, inAllowlist } = require('../lib/staff')
 const string = value => typeof value === 'string' ? value.trim() : '';
 const emailPattern = /^[^\s@]+@[^\s@]+$/;
 
+async function collectedByDay() {
+  const totals = { '21': 0, '22': 0 };
+  let after = '';
+  for (;;) {
+    const rows = await db('registrations?select=id,visit,amount_paise,festival_payments!inner(amount_paise,revoked_at)' +
+      '&checkout_test=eq.false&status=eq.paid&visit=in.(21,22,both)&order=id.asc&limit=500' + after);
+    for (const row of rows) {
+      if (![row.festival_payments].flat().some(p => p && !p.revoked_at && p.amount_paise === row.amount_paise)) continue;
+      if (row.visit === 'both') {
+        totals['21'] += row.amount_paise / 2;
+        totals['22'] += row.amount_paise / 2;
+      } else totals[row.visit] += row.amount_paise;
+    }
+    if (rows.length < 500) return totals;
+    after = '&id=gt.' + encodeURIComponent(rows.at(-1).id);
+  }
+}
+
 module.exports = timedHandler('admin', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
@@ -89,9 +107,33 @@ module.exports = timedHandler('admin', async (req, res) => {
       await db('festival_staff', { method: 'POST', body: JSON.stringify({ id: user.id, name, email, role: body.role }) });
       return res.json({ ok: true });
     }
+    if (body?.action === 'day_roster') {
+      const { day, after } = body;
+      if (!['21', '22'].includes(day) || (after != null && !/^RYF26-[A-F0-9]{8}$/.test(after))) {
+        return res.status(400).json({ error: 'Invalid roster date or page.' });
+      }
+      const fields = 'id,visit,status,amount_paise,festival_payments(amount_paise,revoked_at),registration_participants(position,first_name,last_name,organization,city,date_of_birth,festival_tickets(id,revoked_at,festival_admissions(event_date)))';
+      const rows = await db(`registrations?select=${fields}&visit=in.(${day},both)&checkout_test=eq.false&order=id.asc&limit=26${after ? '&id=gt.' + after : ''}`);
+      const bookings = rows.slice(0, 25).map(({ registration_participants, festival_payments, ...booking }) => ({
+        ...booking,
+        collected: booking.status === 'paid' && [festival_payments].flat().some(p =>
+          p && !p.revoked_at && p.amount_paise === booking.amount_paise) ? booking.amount_paise : 0,
+        people: registration_participants.sort((a, b) => a.position - b.position).map(person => {
+          const ticket = [person.festival_tickets].flat()[0];
+          return { position: person.position, name: [person.first_name, person.last_name].filter(Boolean).join(' '),
+            organization: person.organization, city: person.city, coupon: person.date_of_birth >= '2010-11-01',
+            under16: person.date_of_birth > '2010-11-' + day,
+            ticket: ticket?.revoked_at ? 'Revoked' : ticket ? 'Active' : 'Not issued',
+            admitted: ticket?.festival_admissions.some(a => a.event_date === '2026-11-' + day) || false };
+        }),
+      }));
+      return res.json({ bookings, next: rows.length > 25 ? bookings.at(-1).id : null });
+    }
     if (body?.action === 'registration_breakdown') {
-      const result = await rpc('festival_admin_dashboard', { p_page: 0, p_find: '', p_include_days: true });
-      return res.json(result.days);
+      const [result, totals] = await Promise.all([
+        rpc('festival_admin_dashboard', { p_page: 0, p_find: '', p_include_days: true }), collectedByDay(),
+      ]);
+      return res.json(result.days.map(day => ({ ...day, collected: totals[day.day.slice(-2)] })));
     }
     if (body?.action === 'list') {
       if (body.page != null && (!Number.isSafeInteger(body.page) || body.page < 0 || body.page > 1000)) {

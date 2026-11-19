@@ -51,6 +51,7 @@ function signOut() {
   selected = null;
   byId('admin-results').replaceChildren();
   byId('admin-days').replaceChildren();
+  resetRoster();
   byId('admin-password').focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -195,6 +196,68 @@ function renderDirectory(result) {
 
 
 const breakdown = byId('admin-breakdown');
+const roster = byId('day-roster');
+let rosterVersion = 0;
+function resetRoster() {
+  rosterVersion++;
+  roster.replaceChildren();
+  roster.hidden = true;
+}
+
+function openRoster(day, title, trigger) {
+  resetRoster();
+  const version = rosterVersion;
+  for (const button of byId('admin-days').querySelectorAll('button')) {
+    button.setAttribute('aria-pressed', String(button === trigger));
+  }
+  roster.hidden = false;
+  const heading = element('h3', title + ' · Participants');
+  heading.tabIndex = -1;
+  const list = element('div', '');
+  const status = element('p', '');
+  status.setAttribute('role', 'status');
+  const more = element('button', 'Load more bookings');
+  roster.append(heading, list, status, more);
+  heading.focus();
+  let after = null;
+  async function load() {
+    more.disabled = true;
+    more.hidden = true;
+    status.textContent = 'Loading bookings…';
+    try {
+      const data = await adminRequest({ action: 'day_roster', day, after });
+      if (version !== rosterVersion) return;
+      for (const booking of data.bookings) {
+        const group = element('article', '');
+        group.className = 'roster-booking';
+        group.append(element('h4', booking.id), element('p',
+          `${booking.visit === 'both' ? '21–22' : day} November · ${booking.people.length} participant(s) · ${booking.collected ? 'Paid' : 'Unverified payment'} · Booking total ${bookingCurrency.format(booking.amount_paise / 100)}`));
+        const names = element('ol', '');
+        for (const p of booking.people) {
+          const item = element('li', '');
+          item.append(element('strong', p.name), element('span', [
+            p.under16 && 'Under 16', p.coupon ? 'Food coupon eligible' : 'No food coupon',
+            'Ticket: ' + p.ticket, p.admitted ? 'Checked in' : 'Not checked in', p.organization, p.city,
+          ].filter(Boolean).join(' · ')));
+          names.append(item);
+        }
+        group.append(names);
+        list.append(group);
+      }
+      after = data.next;
+      status.textContent = list.childElementCount ? `${list.childElementCount} bookings shown.` : 'No bookings for this date.';
+      more.hidden = !after;
+      more.textContent = 'Load more bookings';
+    } catch (error) {
+      if (version !== rosterVersion) return;
+      status.textContent = error.message;
+      more.hidden = false;
+      more.textContent = 'Retry';
+    } finally { more.disabled = false; }
+  }
+  more.onclick = load;
+  load();
+}
 async function loadBreakdown() {
   const status = byId('breakdown-status');
   status.textContent = 'Loading registration totals…';
@@ -204,8 +267,15 @@ async function loadBreakdown() {
     const card = document.createElement('article');
     card.className = 'panel';
     const title = attendanceDate.format(new Date(day.day));
-    card.append(element('h3', title), element('p', `${day.registrations} registrations · ${day.participants} participants · ${day.under_16} under 16`),
-      element('p', `${day.paid} active paid passes · ${day.paid_under_16} paid participants under 16`));
+    const button = element('button', title);
+    button.type = 'button';
+    button.setAttribute('aria-controls', 'day-roster');
+    button.setAttribute('aria-pressed', 'false');
+    button.onclick = () => openRoster(day.day.slice(-2), title, button);
+    card.classList.add('roster-day');
+    card.append(button, element('strong', bookingCurrency.format(day.collected / 100) + ' collected'),
+      element('p', `${day.registrations} bookings · ${day.participants} registered participants · ${day.under_16} under 16`),
+      element('p', `${day.paid} active paid tickets · ${day.paid_under_16} paid participants under 16`));
     return card;
   });
   byId('admin-days').replaceChildren(...days);
@@ -215,7 +285,7 @@ async function loadBreakdown() {
     status.textContent = error.message;
   }
 }
-breakdown.ontoggle = () => { if (session && breakdown.open) loadBreakdown(); };
+breakdown.ontoggle = () => { resetRoster(); if (session && breakdown.open) loadBreakdown(); };
 
 let searchTimer;
 function showError(error) { message.textContent = error.message; }

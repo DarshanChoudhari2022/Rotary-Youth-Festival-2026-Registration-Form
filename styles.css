@@ -362,6 +362,15 @@ button, input { font-family: inherit; }
 .admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 16px; }
 .admin-toolbar h2 { margin: 0 auto 0 0; }
 .admin-days { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 14px; }
+.roster-day button { width: 100%; text-align: left; white-space: normal; }
+.roster-day button[aria-pressed="true"] { background: #183b59; }
+.roster-day strong { display: block; margin-top: .75rem; font-size: 1.25rem; }
+#day-roster { margin-top: 1rem; overflow-wrap: anywhere; }
+.roster-booking { border-top: 1px solid #d5dfe8; padding: .8rem 0; }
+.roster-booking h4, .roster-booking p { margin: 0 0 .4rem; }
+.roster-booking ol { padding-left: 1.6rem; margin: 0; }
+.roster-booking li { padding: .3rem 0; }
+.roster-booking li span { display: block; font-size: .9rem; color: #42576b; }
 .admin-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 315px), 1fr)); gap: 14px; }
 .admin-record { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .admin-record h3 { margin: 0; overflow-wrap: anywhere; font-size: 1.1rem; }
