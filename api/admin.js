@@ -6,22 +6,65 @@ const { uuid, staffRoles, rpc, staffFor, inAllowlist } = require('../lib/staff')
 const string = value => typeof value === 'string' ? value.trim() : '';
 const emailPattern = /^[^\s@]+@[^\s@]+$/;
 
-async function collectedByDay() {
-  const totals = { '21': 0, '22': 0 };
+async function overviewWithoutMigration() {
+  const days = ['21', '22'].map(day => ({ day: '2026-11-' + day, registrations: 0, participants: 0,
+    paid: 0, under_16: 0, paid_under_16: 0, collected: 0 }));
+  let participants = 0;
+  let directoryParticipants = 0;
+  let received = 0;
+  let tickets = 0;
+  let under16 = 0;
   let after = '';
   for (;;) {
-    const rows = await db('registrations?select=id,visit,amount_paise,festival_payments!inner(amount_paise,revoked_at)' +
-      '&checkout_test=eq.false&status=eq.paid&visit=in.(21,22,both)&order=id.asc&limit=500' + after);
-    for (const row of rows) {
-      if (![row.festival_payments].flat().some(p => p && !p.revoked_at && p.amount_paise === row.amount_paise)) continue;
-      if (row.visit === 'both') {
-        totals['21'] += row.amount_paise / 2;
-        totals['22'] += row.amount_paise / 2;
-      } else totals[row.visit] += row.amount_paise;
+    const rows = await db('registrations?select=id,visit,checkout_test,status,amount_paise,festival_payments(amount_paise,revoked_at),registration_participants(date_of_birth,festival_tickets(id,revoked_at))' +
+      '&order=id.asc&limit=500' + after);
+    for (const booking of rows) {
+      for (const payment of [booking.festival_payments].flat()) {
+        if (payment && !payment.revoked_at) received += payment.amount_paise;
+      }
+      directoryParticipants += booking.registration_participants.length;
+      if (booking.checkout_test || booking.visit === 'demo') continue;
+      const visits = days.filter(d => booking.visit === 'both' || d.day.endsWith(booking.visit));
+      const verified = booking.status === 'paid' && [booking.festival_payments].flat().some(p =>
+        p && !p.revoked_at && p.amount_paise === booking.amount_paise);
+      participants += booking.registration_participants.length;
+      for (const day of visits) {
+        day.registrations++;
+        day.participants += booking.registration_participants.length;
+        if (verified) day.collected += booking.amount_paise / visits.length;
+      }
+      for (const person of booking.registration_participants) {
+        const active = verified && [person.festival_tickets].flat().some(t => t && !t.revoked_at);
+        if (active) tickets++;
+        if (person.date_of_birth > '2010' + visits[0].day.slice(4)) under16++;
+        for (const day of visits) {
+          const youth = person.date_of_birth > '2010' + day.day.slice(4);
+          if (active) day.paid++;
+          if (youth) day.under_16++;
+          if (youth && active) day.paid_under_16++;
+        }
+      }
     }
-    if (rows.length < 500) return totals;
+    if (rows.length < 500) return { days, participants, directoryParticipants, tickets, under16, received };
     after = '&id=gt.' + encodeURIComponent(rows.at(-1).id);
   }
+}
+
+// Keep older databases usable during rollout without retrying a missing RPC on every view.
+let retryOverviewAt = 0;
+async function overview() {
+  if (Date.now() >= retryOverviewAt) {
+    try {
+      const result = await rpc('festival_admin_overview');
+      if (Number.isInteger(result.directoryParticipants) && Number.isInteger(result.received)) return result;
+      retryOverviewAt = Date.now() + 60000;
+    }
+    catch (error) {
+      if (!['PGRST202', '42883'].includes(error.code)) throw error;
+      retryOverviewAt = Date.now() + 60000;
+    }
+  }
+  return overviewWithoutMigration();
 }
 
 module.exports = timedHandler('admin', async (req, res) => {
@@ -44,7 +87,7 @@ module.exports = timedHandler('admin', async (req, res) => {
       return res.json({ role, directory });
     }
     if (body?.action === 'daily_attendance' && role === 'super') {
-      const ttl = integerSetting('FESTIVAL_ATTENDANCE_TTL_SECONDS', 0, 0, 60);
+      const ttl = integerSetting('FESTIVAL_ATTENDANCE_TTL_SECONDS', 5, 0, 60);
       return res.json(ttl
         ? await rpc('festival_attendance_snapshot', { p_ttl_seconds: ttl })
         : await rpc('festival_daily_attendance'));
@@ -112,10 +155,12 @@ module.exports = timedHandler('admin', async (req, res) => {
       if (!['21', '22'].includes(day) || (after != null && !/^RYF26-[A-F0-9]{8}$/.test(after))) {
         return res.status(400).json({ error: 'Invalid roster date or page.' });
       }
-      const fields = 'id,visit,status,amount_paise,festival_payments(amount_paise,revoked_at),registration_participants(position,first_name,last_name,organization,city,date_of_birth,festival_tickets(id,revoked_at,festival_admissions(event_date)))';
+      const fields = 'id,visit,status,amount_paise,festival_payments(provider,amount_paise,revoked_at),registration_participants(position,first_name,last_name,organization,city,date_of_birth,festival_tickets(id,revoked_at,festival_admissions(event_date)))';
       const rows = await db(`registrations?select=${fields}&visit=in.(${day},both)&checkout_test=eq.false&order=id.asc&limit=26${after ? '&id=gt.' + after : ''}`);
       const bookings = rows.slice(0, 25).map(({ registration_participants, festival_payments, ...booking }) => ({
         ...booking,
+        cash_received: booking.status === 'paid' && [festival_payments].flat().some(payment =>
+          payment?.provider === 'counter_cash' && !payment.revoked_at && payment.amount_paise === booking.amount_paise),
         collected: booking.status === 'paid' && [festival_payments].flat().some(p =>
           p && !p.revoked_at && p.amount_paise === booking.amount_paise) ? booking.amount_paise : 0,
         people: registration_participants.sort((a, b) => a.position - b.position).map(person => {
@@ -130,10 +175,8 @@ module.exports = timedHandler('admin', async (req, res) => {
       return res.json({ bookings, next: rows.length > 25 ? bookings.at(-1).id : null });
     }
     if (body?.action === 'registration_breakdown') {
-      const [result, totals] = await Promise.all([
-        rpc('festival_admin_dashboard', { p_page: 0, p_find: '', p_include_days: true }), collectedByDay(),
-      ]);
-      return res.json(result.days.map(day => ({ ...day, collected: totals[day.day.slice(-2)] })));
+      const result = await overview();
+      return res.json(body.includeTotals ? result : result.days);
     }
     if (body?.action === 'list') {
       if (body.page != null && (!Number.isSafeInteger(body.page) || body.page < 0 || body.page > 1000)) {
@@ -141,7 +184,20 @@ module.exports = timedHandler('admin', async (req, res) => {
       }
       const page = body.page ?? 0;
       const find = typeof body.find === 'string' ? body.find.trim().slice(0, 254) : '';
-      return res.json(await rpc('festival_admin_dashboard', { p_page: page, p_find: find, p_include_days: body.includeDays !== false }));
+      const result = await rpc('festival_admin_dashboard', { p_page: page, p_find: find, p_include_days: body.includeDays !== false });
+      const ids = [...new Set(result.participants.filter(person => person.status === 'paid').map(person => person.booking_id))];
+      if (ids.length) {
+        const payments = await db('festival_payments?select=registration_id,amount_paise,provider&revoked_at=is.null&registration_id=in.(' +
+          ids.map(encodeURIComponent).join(',') + ')');
+        const byBooking = new Map(payments.map(payment => [payment.registration_id, payment]));
+        for (const person of result.participants) {
+          const payment = byBooking.get(person.booking_id);
+          if (person.status !== 'paid' || payment?.amount_paise !== person.amount_paise) continue;
+          person.received_paise = payment.amount_paise;
+          person.cash_received = payment.provider === 'counter_cash';
+        }
+      }
+      return res.json(result);
     }
     if (body?.action === 'download' && /^RYF26-[A-F0-9]{8}$/.test(body.booking_id || '')
         && typeof body.ticket_id === 'string' && uuid.test(body.ticket_id)) {

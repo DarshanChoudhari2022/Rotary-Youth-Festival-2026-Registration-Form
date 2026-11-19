@@ -29,25 +29,24 @@
     </form>
     <section id="admin-dashboard" hidden>
       <aside class="desk-rail"><strong>Festival workspace</strong>
-        <nav aria-label="Staff navigation"><a href="#desk-overview">Overview</a><a href="#desk-directory">Participants</a><a href="#admin-operations" id="operations-link" hidden>Event operations</a></nav>
+        <nav aria-label="Staff navigation"><a href="/admin" data-view="overview">Overview</a><a href="/admin?view=participants" data-view="participants">Participants</a><a href="/admin?view=operations" data-view="operations" id="operations-link" hidden>Event operations</a></nav>
         <div class="desk-staff-actions">
           <a href="/scanner.html">Gate scanner</a>
           <button type="button" id="admin-sign-out">Sign out</button>
         </div>
       </aside>
       <div class="desk-content"><div class="desk-heading" id="desk-overview"><div><p>21–22 November 2026</p><h2>Event overview</h2></div><button type="button" id="admin-add" hidden>+ Add participant</button></div>
+      <details id="admin-breakdown" class="panel"><summary>Registration breakdown by day</summary>
+        <p>Overall money and participant totals include demo entries. The date charts cover festival bookings. A two-day ticket counts once overall and on both visit dates. Each date receives half its payment.</p>
+        <p id="breakdown-status" role="status"></p>
+        <div id="admin-days"></div>
+      </details>
       <section id="admin-daily-attendance" class="panel" hidden aria-labelledby="daily-attendance-title">
-        <div id="attendance-metrics" class="desk-metrics"></div><h2 id="daily-attendance-title">Daily attendance</h2>
+        <h2 id="daily-attendance-title">Daily attendance</h2>
         <p id="attendance-status">Loading attendance…</p>
         <div id="attendance-cards" class="admin-days"></div>
       </section>
-      <details id="admin-breakdown" class="panel"><summary>Registration breakdown by day</summary>
-        <p>Select a date to see its participants. Two-day passes count on each day, with half the payment allocated to each date. Demo bookings are excluded.</p>
-        <p id="breakdown-status" role="status"></p>
-        <div id="admin-days" class="admin-days"></div>
-        <section id="day-roster" hidden aria-label="Participants by booking"></section>
-      </details>
-      <section id="desk-directory" class="desk-directory"><h2>Participant directory</h2>
+      <section id="desk-directory" class="desk-directory"><section id="day-roster" hidden aria-label="Participants by booking"></section><h3>Search all participants</h3>
       <form id="admin-search" class="panel admin-toolbar admin-search">
         <label for="admin-find">Search participants</label>
         <input id="admin-find" type="search" maxlength="254" placeholder="Name, mobile, email, or ID">

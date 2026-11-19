@@ -9,7 +9,7 @@
 .desk-rail nav {display:grid;gap:4px}
 .desk-rail a,.desk-rail button {display:block;text-decoration:none;font-size:.9rem;font-weight:600;border-radius:7px;padding:10px;color:#24415f}
 .desk-rail a:hover,.desk-rail a:focus-visible {background:#f7e9f0}
-.desk-rail nav a:first-child {background:#f0f4fa}
+.desk-rail nav a[aria-current="page"] {background:#f0f4fa}
 .desk-rail button {margin-top:20px;width:100%;background:#f3f5f8}
 .desk-rail button:hover {background:#e4eaf1}
 .desk-content {min-width:0;display:grid;gap:16px}
@@ -88,3 +88,36 @@
   .admin-shell:has(#admin-dashboard:not([hidden])) .policy-header a[href="/scanner.html"] {display:none}
   .desk-metrics>div {display:flex;flex-direction:column;justify-content:space-between}
 }
+
+ .overview-comparison { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums }
+.overview-comparison th,.overview-comparison td { padding:.7rem .45rem; border-bottom:1px solid #dae2eb; text-align:right }
+.overview-comparison th:first-child { text-align:left }
+.overview-comparison tbody th { font-weight:500 }
+.overview-comparison thead { background:#f0f4fa }
+.overview-comparison td { font-weight:700 }
+.overview-comparison tbody tr:first-child td { color:#a91550 }
+.overview-roster { margin-top:.65rem; overflow-wrap:anywhere }
+.overview-roster summary { cursor:pointer; padding:.65rem 0; font-weight:600 }
+.attendance-card progress { display:block; width:100%; margin:.6rem 0 }
+@media(max-width:480px){.overview-comparison {font-size:.86rem}.overview-comparison th,.overview-comparison td {padding:.65rem .25rem}}
+
+.overview-selectors { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.6rem }
+.overview-selectors button { background:white; color:#183b59; border:1px solid #cedbe6; border-radius:10px; text-align:left; padding:.8rem; white-space:normal; font-family:inherit; font-size:.9375rem; font-weight:600; line-height:1.4 }
+.overview-selectors button:hover:enabled { background:#edf4fa; border-color:#64859e; color:#183b59 }
+.overview-selectors button[aria-pressed=true] { background:#f9edf2; border-color:#ad1550; color:#841140 }
+.overview-selectors button[aria-pressed=true]:hover:enabled { background:#f6e2eb; color:#841140; border-color:#ad1550 }
+.overview-selectors button:focus-visible { outline:3px solid #185787; outline-offset:2px }
+.overview-selectors strong { display:block; margin-top:.35rem; font-size:clamp(1.375rem,2vw,1.625rem); line-height:1.2; font-weight:700; font-variant-numeric:tabular-nums }
+.overview-chart { margin:1rem 0; padding:.9rem; border-radius:10px; background:#f4f7fa }
+.overview-chart h3 { margin:0 0 .6rem }
+.overview-chart div { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:.65rem; margin:.45rem 0 }
+.overview-chart progress { width:100%; min-width:0; accent-color:#185787 }
+.overview-chart div:last-child progress { accent-color:#bd1451 }
+.overview-chart div { grid-template-columns:5.7rem minmax(0,1fr) 5rem }
+.overview-chart strong { text-align:right }
+@media(max-width:750px){.overview-selectors{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.booking-record > summary small { max-width: 50ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.booking-record > div { padding: 0 .75rem .75rem }
+.booking-person > summary { display: flex; justify-content: space-between }
+.booking-person[open] { background: white }
+.booking-person > summary::after { display: inline-block }

@@ -30,6 +30,25 @@ test('advance cash issues a paid pass without admission; existing large bookings
     await db.query('select fulfill_festival_payment($1,$2,$3)',[group.registration_id,'class-payment',group.amount_paise]);
     const tickets = await db.query('select id from festival_tickets where registration_id=$1',[group.registration_id]);
     assert.equal(new Set(tickets.rows.map(t => t.id)).size,45);
+    const overview = (await db.query('select festival_admin_overview() value')).rows[0].value;
+    const previous = (await db.query("select festival_admin_dashboard(0,'',true) value")).rows[0].value;
+    assert.deepEqual(overview.days.map(({ collected, ...day }) => day), previous.days);
+    assert.deepEqual(overview.days.map(day => day.collected), [470000, 10000]);
+    assert.equal(overview.participants, 46);
+    const emptyBooking = await db.query('select * from create_festival_registration($1,$2,$3,$4)',
+      [randomUUID(), 'both', JSON.stringify([people[0]]), true]);
+    await db.query('delete from registration_participants where registration_id=$1', [emptyBooking.rows[0].registration_id]);
+    const afterEmpty = (await db.query('select festival_admin_overview() value')).rows[0].value;
+    assert.equal(afterEmpty.participants, overview.participants);
+    assert.deepEqual(afterEmpty.days.map(d => d.participants), overview.days.map(d => d.participants));
+    assert.equal(overview.tickets, 46);
+    assert.equal(overview.received, group.amount_paise + issued.amount_paise);
+    const cashReport = async () => (await db.query('select festival_operations_report() value')).rows[0].value;
+    assert.equal((await cashReport()).cash_paise, issued.amount_paise);
+    await db.query('update festival_payments set revoked_at=now() where registration_id=$1', [issued.booking_id]);
+    assert.equal((await cashReport()).cash_paise, 0);
+    assert.deepEqual((await cashReport()).cash_by_staff, []);
+    assert.equal(overview.under16, 44);
     assert.equal((await db.query('select * from festival_admissions')).rows.length,0);
   } finally { await db.close(); }
 });

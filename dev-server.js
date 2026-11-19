@@ -58,7 +58,7 @@ http.createServer(async (req, res) => {
     res.setHeader('Content-Type', types[path.extname(file)]);
     res.end(content);
   });
-}).listen(3000, '127.0.0.1', () => {
-  console.log('Registration running at http://127.0.0.1:3000');
+}).listen(Number(process.env.PORT || 3000), '127.0.0.1', function () {
+  console.log('Registration running at http://127.0.0.1:' + this.address().port);
   console.log('Local configuration is read from .env.local when saving.');
 });
