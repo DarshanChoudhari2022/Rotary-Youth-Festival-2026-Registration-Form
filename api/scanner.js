@@ -12,9 +12,13 @@ module.exports = timedHandler('scanner', async (req, res) => {
     try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; }
     catch { return res.status(400).json({ error: 'Invalid request.' }); }
     if (body?.action === 'session') return res.json({ role: staff.role });
-    if (!['inspect', 'admit'].includes(body?.action)) return res.status(400).json({ error: 'Invalid action.' });
+    if (!['inspect', 'admit', 'wristband'].includes(body?.action)) return res.status(400).json({ error: 'Invalid action.' });
     try { ticket = verifyQr(body.ticket); }
     catch { return res.status(400).json({ error: 'Invalid or altered ticket QR.' }); }
-    return res.json(await rpc('inspect_festival_ticket', { p_ticket: ticket, p_staff: staff.id, p_admit: body.action === 'admit' }));
+    if (body.action === 'wristband' && !['2026-11-21','2026-11-22'].includes(body.day)) {
+      return res.status(400).json({ error: 'Scan the ticket again to confirm its entry date.' });
+    }
+    return res.json(await rpc('festival_gate_scan', { p_ticket: ticket, p_staff: staff.id,
+      p_action: body.action, p_day: body.action === 'wristband' ? body.day : null }));
   } catch { return res.status(503).json({ error: 'Verification unavailable. Do not admit without verification; contact the gate supervisor.' }); }
 });

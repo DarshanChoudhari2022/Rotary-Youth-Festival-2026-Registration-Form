@@ -60,34 +60,51 @@ function stopCamera() {
   $('#camera-stop').hidden = true;
   $('#camera-start').disabled = false;
 }
-$('#logout').onclick = () => { document.body.classList.add('signed-out'); stopCamera(); accessToken = null; delete message.dataset.outcome; $('#ticket-result').replaceChildren(); $('#ticket-token').value = ''; $('#scan-panel').hidden = true; $('#staff-login').hidden = false; message.textContent = 'Signed out.'; };
-$('#ticket-token').oninput = () => { delete message.dataset.outcome; $('#ticket-result').replaceChildren(); message.textContent = 'Ready to check in.'; };
+$('#logout').onclick = () => { document.body.classList.add('signed-out'); stopCamera(); accessToken = null; delete message.dataset.outcome; clearTicketResult(); $('#ticket-token').value = ''; $('#scan-panel').hidden = true; $('#staff-login').hidden = false; message.textContent = 'Signed out.'; };
+$('#ticket-token').oninput = () => { delete message.dataset.outcome; clearTicketResult(); message.textContent = 'Ready to check in.'; };
+function clearTicketResult() {
+  $('#wristband-confirm')?.remove();
+  $('#ticket-result').replaceChildren();
+}
 function scanRequest(token, data) {
   return fetch('/api/scanner', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
     body: JSON.stringify(data), signal: AbortSignal.timeout(15000) });
 }
+const ticketDates = { '21': 'Saturday, 21 November 2026', '22': 'Sunday, 22 November 2026', both: '21 and 22 November 2026' };
 const checkInTime = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
-async function check() {
+async function check(action = 'admit', token = $('#ticket-token').value.trim(), day) {
   if (busy || !accessToken) return;
   const sessionToken = accessToken;
-  const token = $('#ticket-token').value.trim();
   busy = true;
   $('#ticket-token').disabled = true;
   delete message.dataset.outcome;
-  $('#ticket-result').replaceChildren();
+  clearTicketResult();
   message.textContent = 'Checkingâ€¦';
   try {
-    const response = await scanRequest(sessionToken, { action: 'admit', ticket: token });
+    const response = await scanRequest(sessionToken, { action, ticket: token, day });
     if (sessionToken !== accessToken) return;
     const result = await response.json(); if (!response.ok) throw new Error(result.error);
     message.dataset.outcome = result.status;
     const outcomes = { admitted: 'CHECKED IN. Issue the wristband.', already_used: 'ALREADY CHECKED IN. Do not issue another wristband.', wrong_day: 'Not valid for today. Do not admit.', invalid_or_revoked: 'Unpaid or invalid ticket. Do not admit.', unknown: 'Unknown ticket. Do not admit.' };
     message.textContent = result.status === 'test_ticket' ? 'Payment test ticket. Do not admit.' : outcomes[result.status] || 'Unable to verify. Do not admit.';
+    if (action === 'wristband' && result.wristband_tied_at && result.event_date === day) {
+      message.dataset.outcome = 'admitted';
+      message.textContent = 'Wristband confirmed. Check-in complete.';
+    }
     const admittedAt = result.admitted_at && checkInTime.format(new Date(result.admitted_at));
-    for (const [label, value] of [['Participant', result.name], ['Ticket ID', result.ticket_id], ['Check-in time (IST)', admittedAt],
+    for (const [label, value] of [['Booked for', ticketDates[result.visit]], ['Participant', result.name], ['Wristband', result.admitted_at && (result.wristband_tied_at ? 'Tied · ' + checkInTime.format(new Date(result.wristband_tied_at)) : 'Confirmation pending')], ['Ticket ID', result.ticket_id], ['Check-in time (IST)', admittedAt],
       ['Checked in by', result.staff_name || result.staff_id], ['Food coupon', admittedAt && result.food_eligible ? 'Eligible' : '']]) {
       if (!value) continue;
       const term = document.createElement('dt'), detail = document.createElement('dd'); term.textContent = label; detail.textContent = value; $('#ticket-result').append(term, detail);
+    }
+    if (result.can_confirm_wristband) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'scanner-primary';
+      button.textContent = 'Confirm wristband tied';
+      button.onclick = () => check('wristband', token, result.event_date);
+      $('#ticket-result').after(button);
+      button.id = 'wristband-confirm';
     }
   } catch (error) {
     if (sessionToken === accessToken) {
@@ -147,7 +164,7 @@ $('#qr-photo').onchange = async event => {
   stopCamera();
   const session = cameraSession;
   delete message.dataset.outcome;
-  $('#ticket-result').replaceChildren();
+  clearTicketResult();
   message.textContent = 'Reading ticket photo…';
   const url = URL.createObjectURL(file);
   try {

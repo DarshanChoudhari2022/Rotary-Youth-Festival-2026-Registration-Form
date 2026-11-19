@@ -68,6 +68,22 @@ test('database fulfillment and admission invariants', async () => {
   assert.equal((await inspect(false)).status,'valid');
   assert.equal((await inspect(true)).status,'admitted');
   assert.equal((await inspect(true)).status,'already_used');
+  // Freeze the wrapper clock to the same festival day as the admission fixture.
+  const wristbandSql = fs.readFileSync('supabase/migrations/202611190022_gate_wristband.sql','utf8');
+  await db.exec(wristbandSql.slice(wristbandSql.indexOf('create function'), wristbandSql.indexOf('revoke all'))
+    .replace('create function','create or replace function')
+    .replace("(statement_timestamp() at time zone 'Asia/Kolkata')::date", "date '2026-11-21'"));
+  const scan = async (actor, action, day = '2026-11-21') => (await db.query(
+    'select festival_gate_scan($1,$2,$3,$4) result',[tickets[0].id,actor,action,day])).rows[0].result;
+  const other = crypto.randomUUID();
+  assert.equal((await scan(other,'wristband')).wristband_tied_at,null);
+  assert.equal((await scan(staff,'wristband','2026-11-22')).wristband_tied_at,null);
+  const tied = (await scan(staff,'wristband')).wristband_tied_at;
+  assert.ok(tied);
+  assert.equal((await scan(staff,'wristband')).wristband_tied_at,tied);
+  const repeat = await scan(other,'admit');
+  assert.equal(repeat.status,'already_used');
+  assert.equal(repeat.wristband_tied_at,tied);
   await db.query('update festival_tickets set revoked_at=now() where id=$1',[tickets[0].id]);
   assert.equal((await inspect(true)).status,'invalid_or_revoked');
   await db.exec('set role anon');
