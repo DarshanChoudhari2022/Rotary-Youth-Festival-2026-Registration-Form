@@ -55,6 +55,17 @@ function detail(doc, label, value) {
   doc.fillColor('#526475').fontSize(9).text(label);
   doc.fillColor('#14263D').fontSize(12).text(value).moveDown(0.45);
 }
+function fullName(person) {
+  return [person.first_name, person.last_name].filter(Boolean).join(' ');
+}
+
+function showRoster(doc, people, recipients) {
+  doc.fillColor('#18568e').fontSize(15).text(`Participants in this booking: ${people.length}`);
+  doc.fillColor('#14263D').fontSize(11).text(people.map(fullName).join(', ')).moveDown(0.4);
+  doc.fillColor('#18568e').fontSize(15).text(`Food coupon recipients: ${recipients.length}`);
+  if (recipients.length) doc.fillColor('#14263D').fontSize(11).text(recipients.map(fullName).join(', '));
+  doc.moveDown(0.5);
+}
 function bookingFares(booking, people, isDemo) {
   const total = booking.amount_paise / 100;
   const regular = booking.visit === 'both' ? 400 : 200;
@@ -105,7 +116,7 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
     let fingerprint;
     if (!ticketId && (saveArtifact || process.env.FESTIVAL_TICKET_ARTIFACTS === 'true')) {
       fingerprint = createHash('sha256').update(JSON.stringify([
-        3, process.env.FESTIVAL_TICKET_TEMPLATE_VERSION || '1', booking, payment, people,
+        4, process.env.FESTIVAL_TICKET_TEMPLATE_VERSION || '1', booking, payment, people,
         tickets.map(ticket => [ticket.position, qr(ticket.id)]),
       ])).digest('hex');
       if (!saveArtifact) {
@@ -121,12 +132,14 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
     const chunks = [];
     const completed = new Promise((resolve, reject) => { doc.on('data', c => chunks.push(c)); doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject); });
     const fares = bookingFares(booking, people, isDemo);
+    const validPositions = new Set(allTickets.filter(t => !t.revoked_at).map(t => t.position));
+    const recipients = people.filter(p => !isDemo && validPositions.has(p.position) && p.date_of_birth >= '2010-11-01');
     if (!ticketId) {
       heading(doc, 'Payment acknowledgement', logos);
       detail(doc, 'Registration', id);
       detail(doc, 'Amount paid', `INR ${(booking.amount_paise / 100).toFixed(2)}`);
       detail(doc, 'Ticket coverage', visitLabel);
-      detail(doc, 'Participants', String(booking.quantity));
+      showRoster(doc, people, recipients);
       if (fares.breakdown) detail(doc, 'Fare breakdown', fares.breakdown);
       detail(doc, 'Payment reference', payment.transaction_id);
       detail(doc, 'Verified at', payment.verified_at);
@@ -137,20 +150,32 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
     for (const ticket of tickets) {
       const person = people.find(p => p.position === ticket.position);
       doc.addPage();
-      heading(doc, isDemo ? 'Demo ticket' : 'Participant entry ticket', logos);
+      heading(doc, fullName(person), logos);
       bookedDate(doc, booking.visit, isDemo);
-      detail(doc, 'Participant', `${person.first_name} ${person.last_name}`);
+      doc.fillColor('#18568e').fontSize(14).text(`${isDemo ? 'Demo ticket' : 'Entry ticket'} · Participant ${ticket.position} of ${booking.quantity}`).moveDown(0.3);
+      const detailsTop = doc.y;
+      // Short rosters fit beside the contact details. Longer lists flow after the QR.
+      const sideRoster = ticketId && people.length <= 3 &&
+        people.every(p => fullName(p).length <= 30) &&
+        [person.email, person.mobile, person.organization, person.city].every(value =>
+          !value || doc.fontSize(12).widthOfString(value) < 260);
+      if (sideRoster) {
+        doc.x = 328;
+        showRoster(doc, people, recipients);
+        doc.x = 48;
+        doc.y = detailsTop;
+      }
       detail(doc, 'Mobile', person.mobile || 'Unavailable');
       detail(doc, 'Email', person.email || 'Unavailable');
       detail(doc, isDemo ? 'Age on payment date' : 'Age on first booked day', participantAge(person.date_of_birth, ageDate));
       if (person.organization) detail(doc, 'College / organisation', person.organization);
       if (person.city) detail(doc, 'City', person.city);
-      if (!isDemo && person.date_of_birth >= '2010-11-01') {
-        detail(doc, 'Food coupon', 'FREE food coupon included. Collect at the designated counter.');
-      }
+      if (!isDemo) detail(doc, 'Food coupon for this participant', recipients.includes(person)
+        ? `Included for ${fullName(person)}. Collect at the food counter.` : 'None included.');
       if (!isDemo) detail(doc, 'Venue', 'Fergusson College, Pune');
       detail(doc, 'Registration / ticket ID', `${id} / ${ticket.id}`);
       const qrImage = await QRCode.toBuffer(qr(ticket.id), { width: 300, errorCorrectionLevel: 'M' });
+      if (doc.y + 112 > doc.page.height - 48) doc.addPage();
       const qrTop = doc.y;
       doc.image(qrImage, 48, qrTop, { width: 112 });
       doc.fillColor('#14263D').fontSize(10).text(
@@ -159,6 +184,12 @@ async function sendBooking(res, id, action, ticketId, saveArtifact) {
       doc.fillColor('#526475').fontSize(10).text(isDemo
         ? 'Scan this QR to test the gate scanner. Support: +91 90110 23332.'
         : 'Present this QR and your identification. One admission per booked day. Support: +91 90110 23332.');
+      if (ticketId && !sideRoster) {
+        doc.x = 48;
+        doc.y = Math.max(doc.y, qrTop + 112) + 8;
+        if (doc.y + 80 > doc.page.height - 48) doc.addPage();
+        showRoster(doc, people, recipients);
+      }
     }
     doc.end();
     const pdf = await completed;
