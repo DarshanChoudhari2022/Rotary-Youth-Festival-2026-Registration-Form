@@ -20,6 +20,9 @@ module.exports = timedHandler('admin', async (req, res) => {
     let body;
     try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; }
     catch { return res.status(400).json({ error: 'Invalid request.' }); }
+    if (body?.action === 'group_link' && ['super', 'registration'].includes(role)) {
+      return res.json({ invite: require('../lib/tickets').groupInvite() });
+    }
     if (body?.action === 'session') {
       if (body.includeDirectory !== true) return res.json({ role });
       const directory = await rpc('festival_admin_dashboard', { p_page: 0, p_find: '', p_include_days: false });
@@ -47,7 +50,12 @@ module.exports = timedHandler('admin', async (req, res) => {
           || (mode === 'online' && !/^[A-Za-z0-9_-]{6,80}$/.test(reference))) {
         return res.status(400).json({ error: 'Check the participant details and confirm that payment was collected.' });
       }
-      return res.json(await rpc('festival_counter_register', { p_request: body.request_id, p_staff: id,
+      const advance = body.visit !== undefined;
+      if (advance && (!['21','22','both'].includes(body.visit) || mode !== 'cash')) {
+        return res.status(400).json({ error: 'Choose a visit and collect cash for an advance ticket.' });
+      }
+      return res.json(await rpc(advance ? 'festival_counter_register_visit' : 'festival_counter_register', {
+        ...(advance ? { p_visit: body.visit } : {}), p_request: body.request_id, p_staff: id,
         p_name: name, p_mobile: '+91' + mobile, p_email: email || null, p_dob: dob || null,
         p_school: school, p_mode: mode, p_reference: mode === 'online' ? reference : null }));
     }
@@ -105,7 +113,7 @@ module.exports = timedHandler('admin', async (req, res) => {
         typeof body[name] === 'string' ? body[name].trim() : '');
       const [first, last, organization, city] = fields;
       if (!/^RYF26-[A-F0-9]{8}$/.test(body.booking_id || '') || !Number.isInteger(body.position)
-          || body.position < 1 || body.position > 10 || !first
+          || body.position < 1 || !first
           || fields.some((value, index) => value.length > [100, 100, 160, 100][index])) {
         return res.status(400).json({ error: 'Check the participant details and try again.' });
       }

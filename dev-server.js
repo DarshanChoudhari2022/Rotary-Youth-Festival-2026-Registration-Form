@@ -21,6 +21,7 @@ http.createServer(async (req, res) => {
     return fs.createReadStream(require.resolve('jsqr')).pipe(res);
   }
   const handlers = { '/api/register': register, '/api/booking': require('./api/booking'), '/api/scanner': require('./api/scanner'), '/api/scanner-config': require('./api/scanner-config'), '/api/payment': require('./api/payment') };
+  handlers['/api/staff-login'] = require('./api/staff-login');
   handlers['/api/admin'] = require('./api/admin');
   handlers['/api/ticket-artifacts'] = require('./api/ticket-artifacts');
   handlers['/api/payment-recovery'] = require('./api/payment-recovery');
@@ -29,7 +30,7 @@ http.createServer(async (req, res) => {
     let body = '';
     for await (const chunk of req) {
       body += chunk;
-      if (body.length > 65536) {
+      if (body.length > (pathname === '/api/register' ? 4 * 1024 * 1024 : 65536)) {
         res.writeHead(413).end();
         return;
       }

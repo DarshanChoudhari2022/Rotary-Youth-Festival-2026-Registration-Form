@@ -7,21 +7,25 @@
   <title>Festival administration | Naya Bharat 2047</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/dashboard.css">
-  <link rel="preload" href="/api/scanner-config" as="fetch" crossorigin="anonymous">
   <script src="/admin.js" defer></script>
 </head>
-<body class="admin-shell">
+<body class="signed-out admin-shell">
   <header class="policy-header"><a href="/">Naya Bharat 2047</a><a href="/scanner.html">Gate scanner</a></header>
   <main class="wrap admin-page">
-    <h1>Festival dashboard</h1>
+    <h1 class="workspace-title">Festival dashboard</h1>
     <p id="admin-message" role="status"></p>
-    <form id="admin-login" class="panel admin-form">
-      <h2>Staff sign-in</h2>
-      <label for="admin-email">Admin email</label>
-      <input id="admin-email" type="email" autocomplete="username" required>
-      <label for="admin-password">Password</label>
-      <input id="admin-password" type="password" autocomplete="current-password" required>
-      <button disabled>Sign in</button>
+    <form id="admin-login" class="staff-access">
+      <div class="staff-visual"><div>Rotary &amp; Rotaract District 3131</div><strong>Naya Bharat <br>2047</strong><span>21–22 November · Pune</span></div>
+      <div class="staff-fields">
+        <h1>Festival dashboard</h1>
+        <p>Sign in to manage festival registrations.</p>
+        <label for="admin-email">Staff email</label>
+        <input id="admin-email" type="email" autocomplete="username" autocapitalize="none" required>
+        <label for="admin-password">Password</label>
+        <input id="admin-password" type="password" autocomplete="current-password" required>
+        <button type="submit">Sign in</button>
+        <p class="login-feedback" role="status"></p>
+      </div>
     </form>
     <section id="admin-dashboard" hidden>
       <aside class="desk-rail"><strong>Festival workspace</strong>
@@ -31,7 +35,7 @@
           <button type="button" id="admin-sign-out">Sign out</button>
         </div>
       </aside>
-      <div class="desk-content"><div class="desk-heading" id="desk-overview"><div><p>21–22 November 2026</p><h2>Event overview</h2></div><button type="button" id="admin-add" hidden>+ Add participant</button></div>
+      <div class="desk-content"><div class="desk-heading" id="desk-overview"><div><p>21–22 November 2026</p><h2>Event overview</h2></div><button type="button" id="admin-add" hidden>+ Add participant</button><button type="button" id="admin-group" hidden>Create group booking link</button></div>
       <section id="admin-daily-attendance" class="panel" hidden aria-labelledby="daily-attendance-title">
         <div id="attendance-metrics" class="desk-metrics"></div><h2 id="daily-attendance-title">Daily attendance</h2>
         <p id="attendance-status">Loading attendance…</p>
@@ -71,10 +75,17 @@
       </section>
       </div>
     </section>
+    <dialog id="group-dialog" aria-labelledby="group-heading"><form method="dialog" class="admin-form">
+      <h2 id="group-heading">Group booking link</h2>
+      <p>Send this link to one group leader. They can enter their class details and pay for everyone together.</p>
+      <label>Shareable link <input id="group-url" type="url" readonly></label>
+      <button type="button" id="group-copy">Copy link</button><button>Close</button>
+    </form></dialog>
     <dialog id="admin-spot" aria-labelledby="spot-title">
       <form id="admin-spot-form" class="admin-form">
         <h2 id="spot-title">Add Participant</h2>
-        <p id="spot-availability" hidden>Spot registration and gate check-in run on 21 and 22 November 2026 (India time). For advance bookings, <a href="/register.html">register a participant online</a>.</p>
+        <p id="spot-availability" hidden>Counter registration is closed.</p>
+        <label id="spot-visit" hidden>Ticket date <select name="visit" disabled required><option value="">Choose a visit</option><option value="21">21 November</option><option value="22">22 November</option><option value="both">Both days</option></select></label>
         <label>Participant name <input name="name" maxlength="100" required></label>
         <label>Mobile number <input name="mobile" type="tel" maxlength="20" required></label>
         <label>Email (optional) <input name="email" type="email" maxlength="254"></label>

@@ -452,3 +452,54 @@ button, input { font-family: inherit; }
   .summary-inner > :first-child { min-width: 0; overflow-wrap: anywhere; }
   .summary p { margin-top: 2px; }
 }
+
+/* Staff entry shares the same layout on the gate and administration desks. */
+.signed-out .workspace-title, .signed-out .scanner-intro, .signed-out .scanner-note,
+.signed-out #scanner-message, .signed-out #admin-message { display: none; }
+body.signed-out { background: #f2f5f8; font-family: "Segoe UI", Arial, sans-serif; }
+.signed-out .policy-header { background: white; }
+body.signed-out main:is(.admin-page,.scanner-main) { max-width: 960px; width: 100%; margin: auto; padding: clamp(24px,7vh,72px) clamp(16px,4vw,42px); }
+.signed-out main :is(#admin-login,#staff-login) { display: grid; grid-template-columns: .92fr 1fr; max-width: none; gap: 0; padding: 0; margin: 0; overflow: hidden; background: white; border: 1px solid #cfdae4; border-radius: 16px; box-shadow: 0 12px 36px #17344c12; }
+.staff-visual { display: flex; flex-direction: column; justify-content: end; gap: 10px; padding: clamp(22px,4vw,42px); color: white; background: linear-gradient(0deg,#0c2347 0%,#0c234793 57%,#0c234727 100%), url('/assets/festival.webp') 38% center / cover; }
+.staff-visual div,.staff-visual span { font-size: .875rem; font-weight: 550; }
+.staff-visual strong { font-size: clamp(36px,4.5vw,62px); line-height: .99; letter-spacing: -.05em; }
+.staff-fields { display: grid; align-content: center; min-width: 0; padding: clamp(24px,4vw,46px); }
+.staff-fields h1 { margin: 0; color: #152e46; font-size: clamp(24px,3vw,34px); letter-spacing: -.04em; line-height: 1.12; }
+.staff-fields > p { margin: 8px 0 22px; color: #485d70; line-height: 1.45; font-size: .95rem; }
+.staff-fields label { margin: 0 0 5px; font-size: .875rem; font-weight: 600; color: #263d52; }
+.staff-access .staff-fields input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 46px; margin: 0 0 16px; padding: 10px 12px; font: inherit; font-size: 16px; border: 1px solid #9aaebf; border-radius: 7px; }
+.staff-fields button { width: 100%; min-height: 46px; margin-top: 4px; border-radius: 7px; background: #ba1454; color: white; font: inherit; font-weight: 650; }
+.staff-fields .login-feedback { margin: 12px 0 0; color: #913049; }
+.staff-fields .login-feedback:empty { margin: 0; }
+@media (max-width: 640px) {
+  .signed-out main :is(#admin-login,#staff-login) { grid-template-columns: 1fr; }
+  .staff-visual { padding: 18px 22px; gap: 4px; background-position: center 58%; }
+  .staff-visual strong { font-size: 30px; }
+  .staff-visual strong br { display: none; }
+  .staff-visual strong br::after { content: " "; }
+  .staff-visual span { font-size: .8rem; }
+}
+
+/* Gate staff use a viewfinder and a high-contrast admission result in the field. */
+body.scanner-page { background: #edf3f4; }
+.scanner-page .gate-header { background: #102b33; color: #fff; max-width: none; display: flex; justify-content: space-between; align-items: center; padding-inline: clamp(16px,5vw,64px); }
+.gate-header a { color: #fff; }
+.gate-header span { color: #bce6db; font-size: .875rem; font-weight: 600; }
+.gate-pass-art,.gate-viewfinder { background-color: #112e36; background-image: radial-gradient(#406168 1px,transparent 1px); background-size: 16px 16px; }
+.gate-pass-art { display: grid; place-items: center; min-height: 155px; padding: 26px; }
+.gate-pass { display: grid; gap: 6px; width: min(230px,100%); padding: 18px 22px; background: #e8f5eb; border-radius: 9px; box-shadow: 5px 7px 0 #091f25; color: #15383d; transform: rotate(-5deg); }
+.gate-pass span,.gate-pass small { font: 600 .75rem/1.3 ui-monospace, monospace; }
+.gate-pass strong { font-size: clamp(1.5rem,4vw,2.25rem); line-height: 1.1; }
+.gate-pass i { margin-top: 6px; border-top: 1px dashed #55746e; height: 23px; background: repeating-linear-gradient(90deg,#15383d 0 2px,transparent 2px 4px,#15383d 4px 5px,transparent 5px 8px); background-origin: content-box; background-clip: content-box; padding-top: 6px; }
+.scanner-page .staff-fields button,.scanner-main .scanner-primary { background: #096257; color: white; }
+.gate-viewfinder { position: relative; display: grid; place-items: center; margin-top: 14px; border-radius: 10px; overflow: hidden; height: clamp(158px,30vh,280px); }
+.gate-viewfinder #camera { position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; max-height: none; object-fit: contain; }
+.gate-target { position: relative; pointer-events: none; height: 72%; aspect-ratio: 1; --edge: #91ffdc; background: linear-gradient(var(--edge),var(--edge)) left top,linear-gradient(var(--edge),var(--edge)) left bottom,linear-gradient(var(--edge),var(--edge)) right top,linear-gradient(var(--edge),var(--edge)) right bottom; background-repeat: no-repeat; background-size: 20px 3px; }
+.gate-target::before { content:""; position:absolute; inset:0; background:inherit; transform:rotate(90deg); }
+.gate-manual { background:white; border:1px solid #c8d8d8; border-radius:10px; padding: 0 15px; }
+.gate-manual summary { cursor:pointer; padding:14px 0; font-weight:650; }
+.gate-manual #scan-form { padding: 0 0 15px; border: 0; margin:0; }
+.gate-verdict #scanner-message { border-radius:8px; }
+.gate-verdict #scanner-message[data-outcome] { font-weight:700; }
+.gate-verdict #scanner-message[data-outcome]:not([data-outcome="admitted"]):not([data-outcome="already_used"]) { background:#ffebe9; color:#812820; border-color:#a53b32; }
+@media(max-width:640px) { .gate-pass-art { padding:18px; min-height:110px; } .gate-pass { padding:10px 16px; width:190px; gap:2px; } }

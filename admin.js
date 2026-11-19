@@ -4,7 +4,7 @@ const dashboard = byId('admin-dashboard');
 const message = byId('admin-message');
 const edit = byId('admin-edit');
 const editForm = byId('admin-edit-form');
-let config;
+
 let session;
 let selected;
 let page = 0;
@@ -28,6 +28,7 @@ function element(tag, text) {
 }
 
 function signOut() {
+  document.body.classList.add('signed-out');
   dashboard.hidden = true;
   login.hidden = false;
   recentPages.clear();
@@ -218,37 +219,25 @@ breakdown.ontoggle = () => { if (session && breakdown.open) loadBreakdown(); };
 
 let searchTimer;
 function showError(error) { message.textContent = error.message; }
-fetch('/api/scanner-config').then(response => response.json()).then(result => {
-  config = result;
-  if (result.url) {
-    const connection = document.createElement('link');
-    connection.rel = 'preconnect';
-    connection.href = new URL(result.url).origin;
-    connection.crossOrigin = 'anonymous';
-    document.head.append(connection);
-  }
-  login.querySelector('button').disabled = !config.adminEnabled;
-  if (!config.adminEnabled) message.textContent = 'Admin access has not been configured.';
-}).catch(() => { message.textContent = 'Could not load sign-in configuration.'; });
-
 login.addEventListener('submit', async event => {
   event.preventDefault();
-  if (!config?.adminEnabled) return;
+  const feedback = login.querySelector('.login-feedback');
+  feedback.textContent = '';
   const button = login.querySelector('button');
   button.disabled = true;
-  message.textContent = 'Signing in…';
+  message.textContent = '';
   button.textContent = 'Signing in…';
   try {
-    const response = await fetch(new URL('/auth/v1/token?grant_type=password', config.url), {
-      method: 'POST', headers: { apikey: config.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: byId('admin-email').value.trim(), password: byId('admin-password').value }),
-      signal: AbortSignal.timeout(10000),
+    const response = await fetch('/api/staff-login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({ workspace: 'admin', email: byId('admin-email').value, password: byId('admin-password').value }),
     });
-    if (!response.ok) throw new Error('Sign-in failed. Check your email and password.');
-    session = (await response.json()).access_token;
-    const authenticated = await adminRequest({ action: 'session', includeDirectory: true });
-    role = authenticated.role;
-    byId('admin-add').hidden = !['super', 'registration'].includes(role);
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    session = result.token;
+    role = result.role;
+    document.body.classList.remove('signed-out');
+    byId('admin-group').hidden = byId('admin-add').hidden = !['super', 'registration'].includes(role);
     byId('admin-operations').hidden = role !== 'super';
     byId('operations-link').hidden = role !== 'super';
     login.hidden = true;
@@ -261,11 +250,8 @@ login.addEventListener('submit', async event => {
     page = 0;
     search = '';
     byId('admin-find').value = '';
-    if (authenticated.directory) {
-      rememberPage(JSON.stringify([0, '']), authenticated.directory);
-      renderDirectory(authenticated.directory);
-    } else await loadDashboard();
-  } catch (error) { showError(error); }
+    loadDashboard().catch(showError);
+  } catch (error) { feedback.textContent = error.message; }
   finally { byId('admin-password').value = ''; button.disabled = false; button.textContent = 'Sign in'; }
 });
 byId('admin-sign-out').onclick = () => { signOut(); message.textContent = 'Signed out.'; };
@@ -306,6 +292,27 @@ editForm.onsubmit = async event => {
   } finally { button.disabled = false; }
 };
 
+byId('group-copy').onclick = async () => {
+  byId('group-url').select();
+  try {
+    await navigator.clipboard.writeText(byId('group-url').value);
+    byId('group-copy').textContent = 'Copied';
+  } catch { byId('group-copy').textContent = 'Select and copy the link above'; }
+};
+byId('admin-group').onclick = async () => {
+  const button = byId('admin-group');
+  button.disabled = true;
+  try {
+    const { invite } = await adminRequest({ action: 'group_link' });
+    const url = new URL('/register.html', location.origin);
+    url.hash = new URLSearchParams({ group: invite }).toString();
+    byId('group-url').value = url.href;
+    byId('group-copy').textContent = 'Copy link';
+    byId('group-dialog').showModal();
+    byId('group-url').select();
+  } catch (error) { showError(error); }
+  finally { button.disabled = false; }
+};
 const spot = byId('admin-spot');
 const spotForm = byId('admin-spot-form');
 const spotSubmit = spotForm.querySelector('button[type=submit]');
@@ -317,16 +324,22 @@ function updateSpot() {
   spotForm.elements.reference.required = online;
   spotForm.elements.reference.disabled = !online;
   const eligible = spotForm.elements.dob.value >= '2010-11-01';
-  byId('spot-price').textContent = eligible ? 'Collect ₹100 · Free food coupon' : 'Collect ₹200';
+  const days = !spotForm.elements.visit.disabled && spotForm.elements.visit.value === 'both' ? 2 : 1;
+  byId('spot-price').textContent = 'Collect ₹' + days * (eligible ? 100 : 200) + (eligible ? ' · Free food coupon' : '');
 }
 
 byId('admin-add').onclick = () => {
   spotForm.reset();
   spotRequest = crypto.randomUUID();
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-  const open = ['2026-11-21', '2026-11-22'].includes(today);
+  const advance = today < '2026-11-21';
+  const open = today <= '2026-11-22';
   byId('spot-availability').hidden = open;
   for (const field of spotForm.querySelectorAll('label, #spot-price')) field.hidden = !open;
+  byId('spot-visit').hidden = !advance;
+  spotForm.elements.visit.disabled = !advance;
+  spotForm.elements.mode.querySelector('[value=online]').disabled = advance;
+  spotSubmit.textContent = advance ? 'Record cash and issue ticket' : 'Register and check in';
   spotSubmit.hidden = !open;
   spotSubmit.disabled = !open;
   byId('spot-message').textContent = '';
@@ -335,7 +348,7 @@ byId('admin-add').onclick = () => {
   spot.showModal();
 };
 spotForm.oninput = event => {
-  if (['mode', 'dob', 'reference'].includes(event.target.name)) spotForm.elements.payment_confirmed.checked = false;
+  if (['mode', 'dob', 'reference', 'visit'].includes(event.target.name)) spotForm.elements.payment_confirmed.checked = false;
   updateSpot();
 };
 byId('spot-close').onclick = () => spot.close();
@@ -345,10 +358,10 @@ spotForm.onsubmit = async event => {
   const data = Object.fromEntries(new FormData(spotForm));
   spotSubmit.disabled = true;
   byId('spot-close').disabled = true;
-  byId('spot-message').textContent = 'Recording payment and check-in…';
+  byId('spot-message').textContent = 'Recording payment…';
   try {
     const result = await adminRequest({ ...data, action: 'spot', request_id: spotRequest, payment_confirmed: data.payment_confirmed === 'on' });
-    byId('spot-message').textContent = `CHECKED IN · ${result.booking_id} · ${bookingCurrency.format(result.amount_paise / 100)} collected. Issue the wristband.${result.food_coupon_eligible ? ' Free food coupon eligible.' : ''}`;
+    byId('spot-message').textContent = `${data.visit ? 'TICKET ISSUED' : 'CHECKED IN'} · ${result.booking_id} · ${bookingCurrency.format(result.amount_paise / 100)} collected. ${data.visit ? 'Scan at the gate on arrival.' : 'Issue the wristband.'}${result.food_coupon_eligible ? ' Free food coupon eligible.' : ''}`;
     const download = element('button', 'Download ticket');
     download.type = 'button';
     download.onclick = () => downloadTicket({ ...result, position: 1 }, download);

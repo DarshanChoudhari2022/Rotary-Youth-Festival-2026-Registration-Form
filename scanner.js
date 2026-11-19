@@ -1,24 +1,27 @@
-let config, accessToken, stream, scanning = false, busy = false;
+let accessToken, stream, scanning = false, busy = false;
 const $ = selector => document.querySelector(selector);
 const message = $('#scanner-message');
-fetch('/api/scanner-config').then(r => r.json()).then(c => { config = c; message.textContent = c.enabled ? 'Sign in with your assigned staff account.' : 'Staff access is not configured yet. Contact the organiser.'; }).catch(() => { message.textContent = 'Unable to connect. Please reload.'; });
 $('#staff-login').addEventListener('submit', async event => {
   event.preventDefault();
-  if (!config?.enabled) return;
-  const button = event.target.querySelector('button'); button.disabled = true;
+  const button = event.target.querySelector('button');
+  const feedback = event.target.querySelector('.login-feedback');
+  feedback.textContent = '';
+  button.disabled = true;
+  button.textContent = 'Signing inâ€¦';
   try {
-    const response = await fetch(config.url + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: config.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: $('#staff-email').value, password: $('#staff-password').value }) });
-    $('#staff-password').value = '';
-    if (!response.ok) throw new Error('Unable to sign in. Check your credentials and try again.');
-    const token = (await response.json()).access_token;
-    const gate = await scanRequest(token, { action: 'session' });
-    if (!gate.ok) throw new Error((await gate.json()).error);
-    accessToken = token;
+    const response = await fetch('/api/staff-login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({ workspace: 'gate', email: $('#staff-email').value, password: $('#staff-password').value }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    accessToken = result.token;
+    document.body.classList.remove('signed-out');
     // Warm the decoder while staff position the first ticket.
     loadDecoder().catch(() => {});
     $('#staff-login').hidden = true; $('#scan-panel').hidden = false;
     message.textContent = 'Ready to verify a ticket.'; $('#camera-start').focus({ preventScroll: true });
-  } catch (error) { message.textContent = error.message; } finally { button.disabled = false; }
+  } catch (error) { feedback.textContent = error.message; } finally { $('#staff-password').value = ''; button.disabled = false; button.textContent = 'Sign in'; }
 });
 let cameraSession = 0;
 let decoder;
@@ -57,7 +60,7 @@ function stopCamera() {
   $('#camera-stop').hidden = true;
   $('#camera-start').disabled = false;
 }
-$('#logout').onclick = () => { stopCamera(); accessToken = null; delete message.dataset.outcome; $('#ticket-result').replaceChildren(); $('#ticket-token').value = ''; $('#scan-panel').hidden = true; $('#staff-login').hidden = false; message.textContent = 'Signed out.'; };
+$('#logout').onclick = () => { document.body.classList.add('signed-out'); stopCamera(); accessToken = null; delete message.dataset.outcome; $('#ticket-result').replaceChildren(); $('#ticket-token').value = ''; $('#scan-panel').hidden = true; $('#staff-login').hidden = false; message.textContent = 'Signed out.'; };
 $('#ticket-token').oninput = () => { delete message.dataset.outcome; $('#ticket-result').replaceChildren(); message.textContent = 'Ready to check in.'; };
 function scanRequest(token, data) {
   return fetch('/api/scanner', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -88,6 +91,7 @@ async function check() {
     }
   } catch (error) {
     if (sessionToken === accessToken) {
+      message.dataset.outcome = 'error';
       message.textContent = ['TimeoutError', 'TypeError', 'AbortError'].includes(error.name)
         ? 'Connection interrupted. Scan the same ticket again before admitting. A completed check-in will show its original time.'
         : error.message;
@@ -142,6 +146,9 @@ $('#qr-photo').onchange = async event => {
   if (!file || busy) return;
   stopCamera();
   const session = cameraSession;
+  delete message.dataset.outcome;
+  $('#ticket-result').replaceChildren();
+  message.textContent = 'Reading ticket photo…';
   const url = URL.createObjectURL(file);
   try {
     const image = new Image();

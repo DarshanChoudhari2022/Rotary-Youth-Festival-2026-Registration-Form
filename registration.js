@@ -17,6 +17,17 @@ const pay = document.querySelector('#pay');
 const review = document.querySelector('#review');
 const save = document.querySelector('#save-booking');
 const saveStatus = document.querySelector('#save-status');
+const groupInvite = new URLSearchParams(location.hash.slice(1)).get('group');
+const groupBooking = /^[a-f0-9-]{36}\.[A-Za-z0-9_-]{43}$/.test(groupInvite || '');
+if (groupBooking) {
+  document.querySelector('#group-add-ten').hidden = false;
+  document.querySelector('#group-add-ten').onclick = () => {
+    for (let i = 0; i < 10; i++) addParticipant();
+    updateBooking();
+  };
+  document.querySelector('.booking-title').textContent = 'Book your group tickets';
+  document.querySelector('.quantity .muted').textContent = 'Add everyone in your group. Pay once for all participants.';
+}
 let draftKey = '';
 let draftId;
 let reviewedBooking;
@@ -78,14 +89,14 @@ function addParticipant() {
     });
   }
   card.open = true;
-  for (const existing of cards.children) existing.open = false;
+  for (const existing of cards.querySelectorAll('details[open]')) existing.open = false;
   cards.append(card);
 }
 
 function updateBooking() {
   const today = eventDate();
   for (const option of form.querySelectorAll('[name=visit]')) {
-    const unavailable = today === secondDay && option.value !== '22';
+    const unavailable = (today === secondDay && option.value !== '22') || (groupBooking && option.value === 'demo');
     option.closest('label').hidden = unavailable;
     option.disabled = unavailable || (option.value === 'demo' && cards.children.length > 1);
     if (unavailable) option.checked = false;
@@ -123,7 +134,7 @@ function updateBooking() {
   guardian.disabled = !hasMinor;
   guardian.required = hasMinor;
   if (!hasMinor) guardian.checked = false;
-  plus.disabled = quantity === 10 || isDemo;
+  plus.disabled = (!groupBooking && quantity >= 10) || isDemo;
   minus.disabled = quantity === 1;
   document.querySelector('#count').value = quantity;
   document.querySelector('#visit-summary').textContent = visit?.label ?? 'Choose your visit';
@@ -142,7 +153,7 @@ for (const link of document.querySelectorAll('[data-policy]')) {
 }
 
 plus.addEventListener('click', () => {
-  if (cards.children.length >= 10) return;
+  if (!groupBooking && cards.children.length >= 10) return;
   addParticipant();
   updateBooking();
   if (plus.disabled) cards.lastElementChild.querySelector('summary').focus();
@@ -213,10 +224,10 @@ form.addEventListener('submit', event => {
   const key = JSON.stringify(booking);
   if (key !== draftKey) {
     draftKey = key;
-    draftId = crypto.randomUUID();
+    draftId = groupBooking ? groupInvite.slice(0, 36) : crypto.randomUUID();
     savedBooking = null;
   }
-  reviewedBooking = { ...booking, requestId: draftId };
+  reviewedBooking = { ...booking, requestId: draftId, ...(groupBooking ? { groupInvite } : {}) };
   renderSaveStatus();
   review.showModal();
 });

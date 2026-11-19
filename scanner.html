@@ -8,40 +8,55 @@
   <link rel="stylesheet" href="/styles.css">
   <script src="/scanner.js" defer></script>
 </head>
-<body class="scanner-page">
-  <header class="policy-header"><a href="/">Naya Bharat 2047</a></header>
+<body class="signed-out scanner-page">
+  <header class="policy-header gate-header"><a href="/">Naya Bharat 2047</a><span>Gate operations</span></header>
   <main class="scanner-main">
-    <h1>Gate verification</h1>
-    <p class="scanner-intro">Scanning a valid ticket checks the participant in. Give them a wristband after confirmation.</p>
-    <form id="staff-login" class="scanner-card scanner-form">
-      <h2>Staff sign-in</h2>
-      <label for="staff-email">Staff email</label>
-      <input id="staff-email" type="email" autocomplete="username" required>
-      <label for="staff-password">Password</label>
-      <input id="staff-password" type="password" autocomplete="current-password" required>
-      <button>Sign in</button>
+
+
+    <form id="staff-login" class="staff-access">
+      <div class="gate-pass-art" aria-hidden="true">
+        <div class="gate-pass"><span>Festival admission</span><strong>Gate access</strong><i></i><small>Naya Bharat 2047</small></div>
+      </div>
+      <div class="staff-fields">
+        <h1>Gate scanner</h1>
+        <p>Sign in with your gate staff account to scan tickets.</p>
+        <label for="staff-email">Staff email</label>
+        <input id="staff-email" type="email" autocomplete="username" autocapitalize="none" required>
+        <label for="staff-password">Password</label>
+        <input id="staff-password" type="password" autocomplete="current-password" required>
+        <button type="submit">Sign in</button>
+        <p class="login-feedback" role="status"></p>
+      </div>
     </form>
     <section id="scan-panel" hidden>
       <div class="scanner-card">
         <div class="scanner-heading">
-          <h2>Scan ticket QR</h2>
+          <h1>Gate scanner</h1>
           <button id="logout" class="scanner-secondary" type="button">Sign out</button>
         </div>
-        <p>Point your camera at the QR code on the ticket.</p>
+        <div class="gate-viewfinder">
+          <video id="camera" playsinline muted hidden></video>
+          <div class="gate-target" aria-hidden="true"></div>
+        </div>
+        <p>Centre the ticket QR in the frame to check in.</p>
         <button id="camera-start" class="scanner-primary" type="button">Scan with camera</button>
-        <video id="camera" playsinline muted hidden></video>
         <button id="camera-stop" class="scanner-secondary" type="button" hidden>Stop camera</button>
         <label for="qr-photo">Or choose a photo of the QR code</label>
         <input id="qr-photo" type="file" accept="image/*">
       </div>
+      <div class="gate-verdict">
+        <p id="scanner-message" role="status" aria-live="polite"></p>
+        <dl id="ticket-result"></dl>
+      </div>
+      <details class="gate-manual"><summary>Use a QR reader or enter a reference</summary>
       <form id="scan-form" class="scanner-card scanner-form">
-        <h2>Manual verification</h2>
+
         <label for="ticket-token">Ticket QR reference</label>
         <input id="ticket-token" required maxlength="150" autocomplete="off" spellcheck="false"
           aria-describedby="ticket-token-help" placeholder="RYF26:…">
         <p id="ticket-token-help">Use a QR reader or paste the full decoded QR text.</p>
         <button class="scanner-secondary">Check in with QR reference</button>
-      </form>
+      </form></details>
     </section>
     <p id="scanner-message" role="status">Loading staff access…</p>
     <dl id="ticket-result"></dl>
