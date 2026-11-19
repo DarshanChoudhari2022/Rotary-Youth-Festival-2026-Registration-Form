@@ -7,8 +7,7 @@ function validate(body) {
   const { requestId, visit, participants, declarations, guardianConsent } = body ?? {};
   if (typeof requestId !== 'string' || !UUID.test(requestId)
       || !Object.hasOwn(FIRST_VISIT, visit) || typeof visit !== 'string'
-      || !Array.isArray(participants) || participants.length < 1 || ((participants.length > 10 || body.groupInvite !== undefined)
-          && !require('../lib/tickets').validGroupInvite(body.groupInvite, requestId))
+      || !Array.isArray(participants) || participants.length < 1 || participants.length > 10
       || visit === 'demo'
       || !['accuracy', 'policies', 'refund', 'food'].every(key => declarations?.[key] === true)) {
     throw new Error('Check the visit, participant count and registration declarations.');
@@ -97,7 +96,7 @@ module.exports = timedHandler('register', async function register(req, res) {
         return res.status(409).json({ participant, field: 'mobile', code: 'MOBILE_ALREADY_REGISTERED',
           error: `Participant ${participant}: this mobile number is already registered. Enter a different number or contact support at 9011023332.` });
       }
-      return res.status(409).json({ error: req.body?.groupInvite ? 'This group link has already been used for a different registration. Contact registration support.' : 'This submission reference has already been used. Change your booking details and review again.' });
+      return res.status(409).json({ error: 'This submission reference has already been used. Change your booking details and review again.' });
     }
     if (!result.ok) throw new Error('Supabase rejected the request');
     const [booking] = await result.json();

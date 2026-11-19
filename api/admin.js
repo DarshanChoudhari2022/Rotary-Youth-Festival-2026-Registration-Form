@@ -20,9 +20,6 @@ module.exports = timedHandler('admin', async (req, res) => {
     let body;
     try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; }
     catch { return res.status(400).json({ error: 'Invalid request.' }); }
-    if (body?.action === 'group_link' && ['super', 'registration'].includes(role)) {
-      return res.json({ invite: require('../lib/tickets').groupInvite() });
-    }
     if (body?.action === 'session') {
       if (body.includeDirectory !== true) return res.json({ role });
       const directory = await rpc('festival_admin_dashboard', { p_page: 0, p_find: '', p_include_days: false });

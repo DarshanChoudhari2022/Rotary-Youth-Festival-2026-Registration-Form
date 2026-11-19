@@ -69,11 +69,11 @@
   .admin-record summary:after {grid-column:3;grid-row:1/3}
 }
 @media(max-width:600px){
-  .desk-heading {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .desk-heading > div {grid-column:1/-1;margin:0 0 4px}
+  .desk-heading {display:grid;justify-items:start;gap:8px}
+  .desk-heading > div {margin:0 0 4px}
   .desk-heading h2 {font-size:1.25rem;line-height:1.3}
   .admin-page button,.desk-rail nav a {font-family:inherit;min-height:44px}
-  .desk-heading button {width:100%;height:100%;padding:8px 10px;font-size:.9375rem;line-height:1.3}
+  .desk-heading button {padding:8px 10px;font-size:.9375rem;line-height:1.3}
   .desk-rail {display:grid;gap:8px;padding:10px}
   .desk-rail nav {display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
   .desk-rail nav a {align-content:center;text-align:center;font-size:.875rem;line-height:1.25}

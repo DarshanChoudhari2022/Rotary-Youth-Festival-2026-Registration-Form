@@ -4,10 +4,8 @@ const { randomUUID } = require('node:crypto');
 const fs = require('node:fs');
 const { PGlite } = require('@electric-sql/pglite');
 const { pg_trgm } = require('@electric-sql/pglite/contrib/pg_trgm');
-process.env.TICKET_SIGNING_SECRET = 'local-only-test-key'.repeat(5);
-const { groupInvite, validGroupInvite } = require('../lib/tickets');
 
-test('advance cash issues a paid pass without admission; a class pays once for individual tickets', async () => {
+test('advance cash issues a paid pass without admission; existing large bookings support individual tickets', async () => {
   const db = new PGlite({ extensions: { pg_trgm } });
   try {
     await db.exec('create role anon; create role authenticated; create role service_role;');
@@ -23,11 +21,8 @@ test('advance cash issues a paid pass without admission; a class pays once for i
     assert.deepEqual(await collect(cash), issued);
     await assert.rejects(collect([...cash.slice(0,9), '22']), /already been used/);
     assert.equal((await db.query('select status from registrations where id=$1',[issued.booking_id])).rows[0].status,'paid');
-    const invite = groupInvite(), id = invite.split('.')[0];
-    assert.ok(validGroupInvite(invite, id));
-    assert.equal(validGroupInvite(invite, randomUUID()), false);
     const people = Array.from({length: 45}, (_, i) => ({first:'Class',last:'Student',mobile:'+9191234500'+String(i).padStart(2,'0'),dob:i ? '2011-01-01':'2000-01-01',email:'class@example.test'}));
-    const args = [id, '21', JSON.stringify(people), true];
+    const args = [randomUUID(), '21', JSON.stringify(people), true];
     const book = async () => (await db.query('select * from create_festival_registration($1,$2,$3,$4)',args)).rows[0];
     const group = await book();
     assert.deepEqual(await book(), group);

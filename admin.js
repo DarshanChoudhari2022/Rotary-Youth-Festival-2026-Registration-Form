@@ -237,7 +237,7 @@ login.addEventListener('submit', async event => {
     session = result.token;
     role = result.role;
     document.body.classList.remove('signed-out');
-    byId('admin-group').hidden = byId('admin-add').hidden = !['super', 'registration'].includes(role);
+    byId('admin-add').hidden = !['super', 'registration'].includes(role);
     byId('admin-operations').hidden = role !== 'super';
     byId('operations-link').hidden = role !== 'super';
     login.hidden = true;
@@ -292,27 +292,6 @@ editForm.onsubmit = async event => {
   } finally { button.disabled = false; }
 };
 
-byId('group-copy').onclick = async () => {
-  byId('group-url').select();
-  try {
-    await navigator.clipboard.writeText(byId('group-url').value);
-    byId('group-copy').textContent = 'Copied';
-  } catch { byId('group-copy').textContent = 'Select and copy the link above'; }
-};
-byId('admin-group').onclick = async () => {
-  const button = byId('admin-group');
-  button.disabled = true;
-  try {
-    const { invite } = await adminRequest({ action: 'group_link' });
-    const url = new URL('/register.html', location.origin);
-    url.hash = new URLSearchParams({ group: invite }).toString();
-    byId('group-url').value = url.href;
-    byId('group-copy').textContent = 'Copy link';
-    byId('group-dialog').showModal();
-    byId('group-url').select();
-  } catch (error) { showError(error); }
-  finally { button.disabled = false; }
-};
 const spot = byId('admin-spot');
 const spotForm = byId('admin-spot-form');
 const spotSubmit = spotForm.querySelector('button[type=submit]');
