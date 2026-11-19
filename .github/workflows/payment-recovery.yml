@@ -1,0 +1,25 @@
+name: Verify pending festival payments
+on:
+  schedule:
+    # UTC. Cover advance sales, both event days and late gateway confirmations.
+    - cron: '2-59/5 0-23 19-26 11 *'
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: festival-payment-recovery
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check due payment attempts
+        env:
+          WORKER_SECRET: ${{ secrets.FESTIVAL_RECOVERY_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$WORKER_SECRET"
+          result=$(curl --silent --show-error --fail --max-time 50 \
+            --header "Authorization: Bearer $WORKER_SECRET" \
+            https://rotaryyouthfestival.samavet.in/api/payment-recovery)
+          echo "$result" | jq -e 'type == "object" and (.checked | type == "number") and .verificationErrors == 0 and .leaseUpdateErrors == 0'
