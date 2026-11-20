@@ -38,7 +38,9 @@ The gate missed the 100 ms target in this burst. The fixture uses embedded Postg
 
 ## Payment recovery worker
 
-Apply migration 202611190017. Configure a scheduler to send GET /api/payment-recovery with Authorization: Bearer followed by the server-only CRON_SECRET. Run it against the simulated gateway first. Match schedule frequency and FESTIVAL_PAYMENT_RECOVERY_BATCH (default 4, maximum 16) to the merchant lookup quota and expected payment rate. The worker claims attempts from PostgreSQL, so an interrupted browser session does not prevent later recovery. A lease expires after two minutes if a worker stops mid-run.
+Apply migration 202611190017 and set the server-only CRON_SECRET in production. The Vercel production deployment schedules GET /api/payment-recovery once daily at 01:00 UTC (06:30 IST). Vercel sends the secret in the Authorization header. Run the worker against the simulated gateway first. Set FESTIVAL_PAYMENT_RECOVERY_BATCH (default and maximum 16) to match the merchant lookup quota. The worker claims attempts from PostgreSQL, so an interrupted browser session does not prevent later recovery. A lease expires after two minutes if a worker stops mid-run.
+
+For immediate recovery, staff can open a pending booking in the participant directory and select **Verify Easebuzz payment**. The server looks up the saved checkout with Easebuzz and uses the same fulfillment function as the browser return and scheduled worker.
 
 After validating that the scheduler runs regularly, optionally set FESTIVAL_ASYNC_PAYMENT_RETURN=true. The hosted browser return then records a reconciliation signal before issuing the existing 303 redirect. The customer can still use the existing verification action for immediate status. Browser payload status and amounts are ignored. Only Easebuzz's transaction lookup and the payment-fulfillment SQL function can settle the booking.
 

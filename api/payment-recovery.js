@@ -23,7 +23,7 @@ module.exports = timedHandler('payment-recovery', async (req, res) => {
   if (!authorizedWorker(req.headers.authorization)) return res.status(401).json({ error: 'Unauthorized.' });
   if (!enabled()) return res.status(503).json({ error: 'Payment recovery is unavailable.' });
   try {
-    const concurrency = integerSetting('FESTIVAL_PAYMENT_RECOVERY_BATCH', 4, 1, 16);
+    const concurrency = integerSetting('FESTIVAL_PAYMENT_RECOVERY_BATCH', 16, 1, 16);
     const attempts = await rpc('festival_claim_payments', { p_limit: concurrency });
     const results = await Promise.allSettled(attempts.map(checkAttempt));
     const failures = results.filter(result => result.status === 'rejected').length;

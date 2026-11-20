@@ -2,6 +2,7 @@ const { timedHandler } = require('../lib/performance');
 const { timedFetch } = require('../lib/performance');
 const { integerSetting } = require('../lib/performance');
 const { db } = require('../lib/tickets');
+const { enabled: easebuzzEnabled, reconcile } = require('../lib/easebuzz');
 const { uuid, staffRoles, rpc, staffFor, inAllowlist } = require('../lib/staff');
 const string = value => typeof value === 'string' ? value.trim() : '';
 const emailPattern = /^[^\s@]+@[^\s@]+$/;
@@ -177,6 +178,25 @@ module.exports = timedHandler('admin', async (req, res) => {
     if (body?.action === 'registration_breakdown') {
       const result = await overview();
       return res.json(body.includeTotals ? result : result.days);
+    }
+    if (body?.action === 'verify_payment') {
+      const bookingId = body.booking_id;
+      if (typeof bookingId !== 'string' || !/^RYF26-[A-F0-9]{8}$/.test(bookingId)) {
+        return res.status(400).json({ error: 'Choose a valid booking.' });
+      }
+      const [[booking], [attempt]] = await Promise.all([
+        db(`registrations?id=eq.${bookingId}&select=id,status,amount_paise,festival_payments(amount_paise,revoked_at)`),
+        db(`festival_payment_attempts?registration_id=eq.${bookingId}&select=txnid`),
+      ]);
+      if (!booking) return res.status(404).json({ error: 'Booking not found.' });
+      if (booking.status === 'paid') {
+        const verified = [booking.festival_payments].flat().some(payment =>
+          payment && !payment.revoked_at && payment.amount_paise === booking.amount_paise);
+        return res.json({ verified });
+      }
+      if (booking.status !== 'pending' || !attempt) return res.json({ verified: false });
+      if (!easebuzzEnabled()) return res.status(503).json({ error: 'Easebuzz verification is unavailable.' });
+      return res.json({ verified: await reconcile(attempt, booking) });
     }
     if (body?.action === 'list') {
       if (body.page != null && (!Number.isSafeInteger(body.page) || body.page < 0 || body.page > 1000)) {

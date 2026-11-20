@@ -211,7 +211,36 @@ function renderBookings(people) {
       element('strong', received ? (matches.some(person => person.position === 1)
         ? bookingCurrency.format(booking.received_paise / 100) + ' received' : 'Covered by booking payment') : ''));
     const roster = element('div', '');
-    row.append(summary, roster);
+    row.append(summary);
+    if (booking.status === 'pending') {
+      const actions = element('div', '');
+      actions.className = 'admin-actions';
+      const verify = element('button', 'Verify Easebuzz payment');
+      verify.type = 'button';
+      const status = element('span', '');
+      status.setAttribute('role', 'status');
+      verify.onclick = async () => {
+        verify.disabled = true;
+        status.textContent = 'Checking Easebuzz…';
+        try {
+          const result = await adminRequest({ action: 'verify_payment', booking_id: id });
+          if (result.verified) {
+            clearDirectoryCache();
+            await loadDashboard();
+            message.textContent = id + ' payment verified.';
+          } else {
+            status.textContent = 'No verified payment found. The booking is still pending.';
+          }
+        } catch (error) {
+          status.textContent = error.message;
+        } finally {
+          verify.disabled = false;
+        }
+      };
+      actions.append(verify, status);
+      row.append(actions);
+    }
+    row.append(roster);
     row.ontoggle = async () => {
       if (!row.open || roster.dataset.loaded) return;
       roster.textContent = 'Loading booking participants…';
