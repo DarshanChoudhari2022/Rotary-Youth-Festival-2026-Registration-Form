@@ -350,42 +350,18 @@ function openRoster(day, title, container = roster) {
   more.onclick = load;
   load();
 }
-// Older local servers can serve the current page while still running the prior API.
-// Reconstruct the registration counts from complete rosters if that API omits them.
-async function overviewFigures() {
-  const overview = await adminRequest({ action: 'registration_breakdown', includeTotals: true });
-  if (Number.isInteger(overview.participants)) return overview;
-  const bookings = new Map();
-  await Promise.all(overview.days.map(async day => {
-    let count = 0;
-    let after = null;
-    do {
-      const page = await adminRequest({ action: 'day_roster', day: day.day.slice(-2), after });
-      for (const booking of page.bookings) {
-        bookings.set(booking.id, booking.people.length);
-        count += booking.people.length;
-      }
-      after = page.next;
-    } while (after);
-    day.participants = count;
-  }));
-  overview.participants = Array.from(bookings.values()).reduce((sum, count) => sum + count, 0);
-  return overview;
-}
-
 async function loadBreakdown() {
   const status = byId('breakdown-status');
   status.textContent = 'Loading registration totals…';
   try {
-    const { days: result, participants, directoryParticipants, tickets, under16, received } = await overviewFigures();
+    const { days: result, tickets, under16, received } =
+      await adminRequest({ action: 'registration_breakdown', includeTotals: true });
     const money = amount => bookingCurrency.format(amount / 100).replace(/\.00$/, '');
     const festivalAmount = result.reduce((sum, day) => sum + day.collected, 0);
     const hasLedger = Number.isInteger(received);
     const choices = [
-      ['Active paid festival tickets', tickets, 'paid', 'Active paid tickets by visit date'],
+      ['Total paid festival participants', tickets, 'paid', 'Paid festival participants by visit date'],
       [hasLedger ? 'Total money received' : 'Festival payments', money(hasLedger ? received : festivalAmount), 'collected', 'Festival collections by visit date'],
-      [Number.isInteger(directoryParticipants) ? 'Total participants' : 'Festival participants',
-        directoryParticipants ?? participants, 'participants', 'Festival participants by visit date'],
       ['Participants under 16', under16, 'under_16', 'Participants under 16 on each visit date'],
     ];
     const cards = element('div', '');
@@ -398,10 +374,6 @@ async function loadBreakdown() {
       const [, , key, title] = choices[index];
       Array.from(cards.children).forEach((button, i) => button.setAttribute('aria-pressed', String(i === index)));
       chart.replaceChildren(element('h3', title));
-      if (key === 'participants' && Number.isInteger(directoryParticipants)) {
-        chart.append(element('p', participants + ' festival participants + ' +
-          (directoryParticipants - participants) + ' demo participants = ' + directoryParticipants));
-      }
       if (key === 'collected' && hasLedger) {
         chart.append(element('p', money(festivalAmount) + ' festival payments + ' +
           money(received - festivalAmount) + ' other receipts (including demo payments) = ' + money(received)));

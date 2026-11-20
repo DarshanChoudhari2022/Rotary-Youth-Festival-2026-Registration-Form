@@ -106,7 +106,7 @@
 .attendance-card progress { display:block; width:100%; margin:.6rem 0 }
 @media(max-width:480px){.overview-comparison {font-size:.86rem}.overview-comparison th,.overview-comparison td {padding:.65rem .25rem}}
 
-.overview-selectors { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.6rem }
+.overview-selectors { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.6rem }
 .overview-selectors button { background:white; color:#183b59; border:1px solid #cedbe6; border-radius:10px; text-align:left; padding:.8rem; white-space:normal; font-family:inherit; font-size:.9375rem; font-weight:600; line-height:1.4 }
 .overview-selectors button:hover:enabled { background:#edf4fa; border-color:#64859e; color:#183b59 }
 .overview-selectors button[aria-pressed=true] { background:#f9edf2; border-color:#ad1550; color:#841140 }
