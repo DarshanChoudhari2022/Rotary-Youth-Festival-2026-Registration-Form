@@ -25,6 +25,7 @@ http.createServer(async (req, res) => {
   handlers['/api/admin'] = require('./api/admin');
   handlers['/api/ticket-artifacts'] = require('./api/ticket-artifacts');
   handlers['/api/payment-recovery'] = require('./api/payment-recovery');
+  handlers['/api/payment-webhook'] = require('./api/payment-webhook');
   if (Object.hasOwn(handlers, pathname)) {
     if (fs.existsSync('.env.local')) process.loadEnvFile('.env.local');
     let body = '';

@@ -42,6 +42,8 @@ Apply migration 202611190017 and set the server-only CRON_SECRET in production. 
 
 For immediate recovery, staff can open a pending booking in the participant directory and select **Verify Easebuzz payment**. The server looks up the saved checkout with Easebuzz and uses the same fulfillment function as the browser return and scheduled worker.
 
+After deploying `/api/payment-webhook`, configure that HTTPS URL as the **Transaction Webhook** in Easebuzz under **Product Settings → Webhook**. Check any existing destination before changing the setting. The endpoint checks Easebuzz's reverse hash, verifies the saved transaction with Easebuzz, then calls the existing fulfillment function. Confirm delivery in Easebuzz Webhook History and confirm the booking appears as paid, including when checkout is closed before the browser returns.
+
 After validating that the scheduler runs regularly, optionally set FESTIVAL_ASYNC_PAYMENT_RETURN=true. The hosted browser return then records a reconciliation signal before issuing the existing 303 redirect. The customer can still use the existing verification action for immediate status. Browser payload status and amounts are ignored. Only Easebuzz's transaction lookup and the payment-fulfillment SQL function can settle the booking.
 
 Review worker verification errors and unresolved pending rows where recovery_exhausted_at is set. These rows have completed 24 attempts. Compare with the provider record before any manual action. To roll back asynchronous returns, unset FESTIVAL_ASYNC_PAYMENT_RETURN. Disabling the scheduler stops background checks. Existing checkout and manual verification remain available.

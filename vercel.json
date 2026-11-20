@@ -4,6 +4,7 @@
   "regions": ["syd1"],
   "crons": [{ "path": "/api/payment-recovery", "schedule": "0 1 * * *" }],
   "functions": {
+    "api/payment-webhook.js": { "maxDuration": 30 },
     "api/ticket-artifacts.js": { "includeFiles": "{fonts/**,assets/ticket-logos.png}" },
     "api/booking.js": { "includeFiles": "{fonts/**,assets/ticket-logos.png}" },
     "api/admin.js": { "includeFiles": "{fonts/**,assets/ticket-logos.png}" }

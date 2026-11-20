@@ -1,5 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { createHash } = require('node:crypto');
 const { reconcile } = require('../lib/easebuzz');
 const paymentHandler = require('../api/payment');
 const adminHandler = require('../api/admin');
@@ -117,4 +118,47 @@ test('async payment return persists a signal before redirecting', async t => {
     delete process.env.FESTIVAL_ASYNC_PAYMENT_RETURN;
     delete process.env.CRON_SECRET;
   }
+});
+
+test('signed Easebuzz webhook verifies a payment without a browser return and acknowledges redelivery', async t => {
+  const webhook = require('../api/payment-webhook');
+  const txnid = 'd'.repeat(24);
+  const booking = { id: 'RYF26-1234ABCD', amount_paise: 20000, status: 'pending' };
+  const payload = { txnid, key: 'fixture-key', status: 'success', amount: '200.00',
+    productinfo: 'Festival tickets', firstname: 'Fixture', email: 'fixture@example.test' };
+  payload.hash = createHash('sha512').update([
+    'fixture-salt', 'success', ...Array(10).fill(''), payload.email,
+    payload.firstname, payload.productinfo, payload.amount, txnid, payload.key,
+  ].join('|')).digest('hex');
+  let gatewayStatus = 'pending';
+  let gatewayReads = 0;
+  let fulfillments = 0;
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    const target = new URL(url);
+    if (target.hostname === 'dashboard.easebuzz.in') {
+      assert.equal(options.body.get('txnid'), txnid);
+      gatewayReads++;
+      return Response.json({ status: true, msg: { ...payload, status: gatewayStatus, easepayid: 'gateway-receipt' } });
+    }
+    if (target.pathname.endsWith('/festival_payment_attempts')) return Response.json([{ txnid, registrations: booking }]);
+    assert.ok(target.pathname.endsWith('/fulfill_festival_payment'));
+    fulfillments++;
+    booking.status = 'paid';
+    return new Response(null, { status: 204 });
+  });
+  async function notify(values) {
+    const res = { code: 200, setHeader() {}, status(code) { this.code = code; return this; }, json() {} };
+    await webhook({ method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(values).toString() }, res);
+    return res.code;
+  }
+  assert.equal(await notify({ ...payload, amount: '1.00' }), 401);
+  assert.equal(gatewayReads, 0);
+  assert.equal(await notify(payload), 503);
+  assert.equal(fulfillments, 0);
+  gatewayStatus = 'success';
+  assert.equal(await notify(payload), 200);
+  assert.equal(await notify(payload), 200);
+  assert.equal(gatewayReads, 2);
+  assert.equal(fulfillments, 1);
 });
