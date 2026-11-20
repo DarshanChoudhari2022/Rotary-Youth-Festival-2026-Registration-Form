@@ -48,6 +48,24 @@ test('advance cash issues a paid pass without admission; existing large bookings
     await db.query('update festival_payments set revoked_at=now() where registration_id=$1', [issued.booking_id]);
     assert.equal((await cashReport()).cash_paise, 0);
     assert.deepEqual((await cashReport()).cash_by_staff, []);
+    const youth = { ...people[1], dob: '2023-12-31' };
+    const youthRequest = randomUUID();
+    const registerWithProof = async person => (await db.query(
+      'select * from create_festival_registration_with_proof($1,$2,$3,$4)',
+      [youthRequest, '21', JSON.stringify([person]), true],
+    )).rows[0];
+    await assert.rejects(registerWithProof(youth), /proof image is required/);
+    await assert.rejects(registerWithProof({ ...youth, dob: '2024-01-01' }), /before 2024/);
+    const proof = Buffer.from('ffd8ff01ffd9', 'hex');
+    const participant = { ...youth, birthProof: proof.toString('base64') };
+    const youthBooking = await registerWithProof(participant);
+    assert.equal(youthBooking.amount_paise, 10000);
+    assert.deepEqual(await registerWithProof(participant), youthBooking);
+    const savedProofs = await db.query(
+      'select position, encode(image, \'hex\') as image from festival_birth_proofs where registration_id=$1',
+      [youthBooking.registration_id],
+    );
+    assert.deepEqual(savedProofs.rows, [{ position: 1, image: proof.toString('hex') }]);
     assert.equal(overview.under16, 44);
     assert.equal((await db.query('select * from festival_admissions')).rows.length,0);
   } finally { await db.close(); }

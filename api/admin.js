@@ -223,6 +223,16 @@ module.exports = timedHandler('admin', async (req, res) => {
         && typeof body.ticket_id === 'string' && uuid.test(body.ticket_id)) {
       return require('./booking').sendBooking(res, body.booking_id, 'download', body.ticket_id);
     }
+    if (body?.action === 'birth_proof' && ['super', 'operations'].includes(role)) {
+      const { booking_id: bookingId, position } = body;
+      if (typeof bookingId !== 'string' || !/^RYF26-[A-F0-9]{8}$/.test(bookingId)
+          || !Number.isSafeInteger(position) || position < 1 || position > 10) {
+        return res.status(400).json({ error: 'Choose a valid participant.' });
+      }
+      const [proof] = await db(`festival_birth_proofs?registration_id=eq.${bookingId}&position=eq.${position}&select=image`);
+      if (!proof) return res.status(404).json({ error: 'No date-of-birth proof is on file for this participant.' });
+      return res.json({ image: Buffer.from(proof.image.slice(2), 'hex').toString('base64') });
+    }
     if (body?.action === 'edit' && ['super', 'operations'].includes(role)) {
       const fields = ['first_name', 'last_name', 'organization', 'city'].map(name =>
         typeof body[name] === 'string' ? body[name].trim() : '');

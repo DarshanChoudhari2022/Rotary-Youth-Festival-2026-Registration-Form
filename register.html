@@ -94,7 +94,11 @@
       <label>Last name * <input name="last" autocomplete="family-name" maxlength="100" placeholder="Enter last name" required></label>
       <label>Mobile number (optional) <span class="phone"><span aria-hidden="true">+91</span><input name="mobile" type="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" title="Enter 10 digits starting with 6, 7, 8 or 9" maxlength="10" placeholder="10-digit mobile number" aria-label="Indian mobile number, optional"></span></label>
       <label>Email ID * <input name="email" autocomplete="email" type="email" maxlength="254" placeholder="Enter email address" required></label>
-      <label>Date of birth * <input name="dob" min="0001-01-01" autocomplete="bday" type="date" required></label>
+      <label>Date of birth * <input name="dob" min="0001-01-01" max="2023-12-31" title="Enter a date of birth before 1 January 2024" autocomplete="bday" type="date" required></label>
+      <label class="birth-proof" hidden>Date-of-birth proof *
+        <small>Upload a JPG (.jpg or .jpeg) or PNG photo or screenshot. PDFs are not accepted. Show the participant’s name and date of birth, and crop out unrelated details. Up to 10 MiB before compression.</small>
+        <input name="birthProof" type="file" accept="image/jpeg,image/png" disabled>
+      </label>
       <label>College / organization <input name="organization" autocomplete="organization" maxlength="160" placeholder="Optional"></label><label>City <input name="city" autocomplete="address-level2" maxlength="100" placeholder="Optional"></label><p class="eligibility muted" aria-live="polite"></p>
     </div>
   </details>

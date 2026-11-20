@@ -31,6 +31,8 @@ const visits = {
   demo: { label: 'Demo ticket · no festival admission', price: 1, days: [21] },
 };
 const offerCutoff = '2010-11-01';
+const proofLimit = 250 * 1024;
+const compressedProofs = new WeakMap();
 const secondDay = '2026-11-22';
 const eventClock = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -54,10 +56,40 @@ function ageOn(dob, day) {
   return 2026 - year - Number(month > 11 || (month === 11 && date > day));
 }
 
+async function compressBirthProof(file) {
+  if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+    throw new Error('Choose a JPG or PNG image up to 10 MiB. PDFs are not accepted.');
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    try {
+      await image.decode();
+    } catch {
+      throw new Error('This image could not be read. Try another photo or screenshot.');
+    }
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    for (const quality of [0.85, 0.72, 0.58, 0.45]) {
+      const jpeg = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+      if (jpeg && jpeg.length * 3 / 4 <= proofLimit) return jpeg;
+    }
+    throw new Error('This image is too large after compression. Upload a smaller crop with the name and date of birth visible.');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function addParticipant() {
   const card = template.content.firstElementChild.cloneNode(true);
   card.querySelector('.participant-title').textContent = `Participant ${cards.children.length + 1}`;
-  card.querySelector('[name=dob]').max = eventDate();
   for (const input of card.querySelectorAll('input')) {
     const error = document.createElement('span');
     error.className = 'field-error';
@@ -77,6 +109,25 @@ function addParticipant() {
       }
     });
   }
+  const proof = card.querySelector('[name=birthProof]');
+  proof.addEventListener('change', async () => {
+    const file = proof.files[0];
+    compressedProofs.delete(proof);
+    proof.setCustomValidity(file ? 'Compressing proof. Please wait.' : '');
+    updateBooking();
+    if (!file) return;
+    try {
+      const jpeg = await compressBirthProof(file);
+      if (proof.files[0] !== file) return;
+      compressedProofs.set(proof, jpeg);
+      proof.setCustomValidity('');
+    } catch (error) {
+      if (proof.files[0] !== file) return;
+      proof.setCustomValidity(error.message || 'Choose a readable image.');
+    }
+    updateBooking();
+    proof.dispatchEvent(new Event('blur'));
+  });
   card.open = true;
   for (const existing of cards.querySelectorAll('details[open]')) existing.open = false;
   cards.append(card);
@@ -101,16 +152,26 @@ function updateBooking() {
       input.setCustomValidity(input.value && !input.value.trim() ? 'Enter a name.' : '');
     }
     const dob = card.querySelector('[name=dob]');
-    dob.max = today;
+    dob.setCustomValidity(dob.validity.rangeOverflow ? 'Enter a date of birth before 1 January 2024.' : '');
     const days = visit?.days ?? [21];
     if (dob.value && dob.validity.valid) {
       hasMinor ||= ageOn(dob.value, days[0]) < 18;
     }
     const eligible = visit && !isDemo && eligibleForOffer(dob);
+    const proof = card.querySelector('[name=birthProof]');
+    const needsProof = Boolean(eligibleForOffer(dob) && !isDemo);
+    proof.closest('label').hidden = !needsProof;
+    proof.disabled = !needsProof;
+    proof.required = needsProof;
+    if (!needsProof) {
+      proof.value = '';
+      proof.setCustomValidity('');
+      compressedProofs.delete(proof);
+    }
     if (eligible) discountCount++;
     card.querySelector('.eligibility').textContent = eligible ? '₹100 per day · Free food coupon included.' : '';
     card.querySelector('.participant-status').textContent =
-      inputs.every(input => input.validity.valid) ? '✓ Completed' : '';
+      inputs.every(input => input.disabled || input.validity.valid) ? '✓ Completed' : '';
   }
 
   guardianRow.hidden = !hasMinor;
@@ -179,7 +240,9 @@ form.addEventListener('submit', event => {
   const participants = [];
   for (const card of cards.children) {
     const item = document.createElement('li');
-    const fields = Object.fromEntries([...card.querySelectorAll('input')].map(input => [input.name, input.value]));
+    const fields = Object.fromEntries([...card.querySelectorAll('input:not([type=file])')].map(input => [input.name, input.value]));
+    const proof = card.querySelector('[name=birthProof]');
+    if (!proof.disabled) fields.birthProof = compressedProofs.get(proof);
     fields.first = fields.first.trim();
     fields.last = fields.last.trim();
     participants.push(fields);
@@ -189,6 +252,7 @@ form.addEventListener('submit', event => {
     for (const [label, value] of [
       ['Mobile', fields.mobile && `+91 ${fields.mobile}`], ['Email', fields.email],
       ['Date of birth', fields.dob.split('-').reverse().join('/')],
+      ['Date-of-birth proof', fields.birthProof ? 'Image attached' : ''],
       ['College / organisation', fields.organization], ['City', fields.city],
     ]) {
       if (!value?.trim()) continue;

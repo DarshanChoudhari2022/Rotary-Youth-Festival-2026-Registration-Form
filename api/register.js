@@ -2,6 +2,7 @@ const { timedHandler } = require('../lib/performance');
 const { timedFetch } = require('../lib/performance');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FIRST_VISIT = { 21: '2026-11-21', 22: '2026-11-22', both: '2026-11-21', demo: '2026-11-21' };
+const MAX_BIRTH_PROOF = 250 * 1024;
 
 function validate(body) {
   const { requestId, visit, participants, declarations, guardianConsent } = body ?? {};
@@ -16,7 +17,7 @@ function validate(body) {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   let hasMinor = false;
   const people = participants.map((person, index) => {
-    const { first, last, email, mobile, dob, organization = "", city = "" } = person ?? {};
+    const { first, last, email, mobile, dob, birthProof, organization = "", city = "" } = person ?? {};
     const date = typeof dob === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dob)
       ? new Date(dob) : new Date(NaN);
     const position = index + 1;
@@ -38,12 +39,25 @@ function validate(body) {
         || dob < '0001-01-01' || dob > today) {
       invalid('dob', 'Enter a valid date of birth on or before today.');
     }
+    if (dob >= '2024-01-01') invalid('dob', 'Enter a date of birth before 1 January 2024.');
+    if (dob >= '2010-11-01') {
+      if (typeof birthProof !== 'string' || birthProof.length > 4 * Math.ceil(MAX_BIRTH_PROOF / 3)
+          || !/^[A-Za-z0-9+/]+={0,2}$/.test(birthProof)) {
+        invalid('birthProof', 'Attach a date-of-birth proof image up to 250 KiB after compression.');
+      }
+      const image = Buffer.from(birthProof, 'base64');
+      if (image.length < 5 || image.length > MAX_BIRTH_PROOF || image.toString('base64') !== birthProof
+          || image.readUIntBE(0, 3) !== 0xffd8ff || image.readUInt16BE(image.length - 2) !== 0xffd9) {
+        invalid('birthProof', 'Choose a readable proof image and try again.');
+      }
+    }
     if (typeof organization !== 'string' || organization.length > 160) {
       invalid('organization', 'Use up to 160 characters for college or organization.');
     }
     if (typeof city !== 'string' || city.length > 100) invalid('city', 'Use up to 100 characters for city.');
     hasMinor ||= dob > FIRST_VISIT[visit].replace('2026', '2008');
-    return { first: first.trim(), last: last.trim(), mobile: mobile ? '+91' + mobile : null, email, dob, organization: organization.trim(), city: city.trim() };
+    return { first: first.trim(), last: last.trim(), mobile: mobile ? '+91' + mobile : null, email, dob,
+      organization: organization.trim(), city: city.trim(), ...(dob >= '2010-11-01' && { birthProof }) };
   });
 
   if (hasMinor && guardianConsent !== true) {
@@ -76,7 +90,7 @@ module.exports = timedHandler('register', async function register(req, res) {
   }
 
   try {
-    const result = await timedFetch('database', new URL('/rest/v1/rpc/create_festival_registration', SUPABASE_URL), {
+    const result = await timedFetch('database', new URL('/rest/v1/rpc/create_festival_registration_with_proof', SUPABASE_URL), {
       method: 'POST',
       headers: { apikey: SUPABASE_SECRET_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

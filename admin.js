@@ -174,6 +174,38 @@ function renderPerson(person) {
   editButton.type = 'button';
   editButton.addEventListener('click', () => openEditor(person));
   if (['super', 'operations'].includes(role)) actions.append(editButton);
+  if (coupon && ['super', 'operations'].includes(role) && person.position <= 10) {
+    const viewProof = element('button', 'View date-of-birth proof');
+    viewProof.type = 'button';
+    const status = element('p', '');
+    status.setAttribute('role', 'status');
+    const image = document.createElement('img');
+    image.alt = 'Uploaded date-of-birth proof';
+    image.hidden = true;
+    viewProof.onclick = async () => {
+      if (!image.hidden) {
+        image.hidden = true;
+        image.removeAttribute('src');
+        viewProof.textContent = 'View date-of-birth proof';
+        return;
+      }
+      viewProof.disabled = true;
+      status.textContent = 'Loading proof…';
+      try {
+        const result = await adminRequest({ action: 'birth_proof', booking_id: person.booking_id, position: person.position });
+        image.src = 'data:image/jpeg;base64,' + result.image;
+        image.hidden = false;
+        viewProof.textContent = 'Hide date-of-birth proof';
+        status.textContent = '';
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        viewProof.disabled = false;
+      }
+    };
+    actions.append(viewProof);
+    row.append(actions, status, image);
+  }
   if (person.ticket_id && !person.revoked_at) {
     if (person.status === 'paid') {
       const download = element('button', 'Download ticket');
@@ -182,7 +214,7 @@ function renderPerson(person) {
       actions.append(download);
     }
   }
-  if (actions.childElementCount) row.append(actions);
+  if (actions.childElementCount && !actions.parentNode) row.append(actions);
   return row;
 }
 

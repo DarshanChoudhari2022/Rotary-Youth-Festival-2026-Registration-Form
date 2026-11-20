@@ -36,6 +36,7 @@ input[type=checkbox],input[type=radio]{flex:none;width:18px;height:18px;margin:2
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px}.fields label{display:grid;gap:8px;font-size:.87rem}.phone{display:flex;align-items:center;gap:10px}.eligibility{grid-column:1/-1}
 .check{display:flex;gap:12px;align-items:flex-start;margin-top:18px;line-height:1.65;font-size:.87rem}
 .field-error{color:#a52727;font-size:.8rem;line-height:1.5}input[aria-invalid=true]{border:2px solid #a52727!important}
+.birth-proof{grid-column:1/-1;min-width:0}.birth-proof input{width:100%;min-width:0}
 .summary{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:16px 0 max(16px,env(safe-area-inset-bottom));z-index:10;box-shadow:0 -4px 16px #14283b0a}
 .summary-inner{display:flex;justify-content:space-between;align-items:center;gap:15px;max-width:900px}.summary p{margin:5px 0 0;font-size:.82rem;color:var(--muted)}.summary strong{font-size:.87rem}
 dialog{width:min(580px,calc(100% - 32px));border:1px solid var(--line);border-radius:12px;padding:28px;color:#1c3042;max-height:85vh;overflow:auto}dialog::backdrop{background:#122d4699}dialog li{overflow-wrap:anywhere;line-height:1.8;margin-bottom:12px}dialog form{margin-top:12px}dialog form button{background:#edf2f6;color:#1c3042}#save-status{overflow-wrap:anywhere}
