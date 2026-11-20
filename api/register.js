@@ -29,7 +29,8 @@ function validate(body) {
         invalid(field, `Enter a ${label} of up to 100 characters.`);
       }
     }
-    if (mobile != null && mobile !== '' && (typeof mobile !== 'string' || !/^[6-9]\d{9}$/.test(mobile))) {
+    const hasMobile = mobile != null && mobile !== '';
+    if ((index === 0 || hasMobile) && (typeof mobile !== 'string' || !/^[6-9]\d{9}$/.test(mobile))) {
       invalid('mobile', 'Enter a 10-digit Indian mobile number beginning with 6, 7, 8 or 9.');
     }
     if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+$/.test(email)) {

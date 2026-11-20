@@ -50,9 +50,9 @@ test('advance cash issues a paid pass without admission; existing large bookings
     assert.deepEqual((await cashReport()).cash_by_staff, []);
     const youth = { ...people[1], dob: '2023-12-31' };
     const youthRequest = randomUUID();
-    const registerWithProof = async person => (await db.query(
+    const registerWithProof = async (person, requestId = youthRequest) => (await db.query(
       'select * from create_festival_registration_with_proof($1,$2,$3,$4)',
-      [youthRequest, '21', JSON.stringify([person]), true],
+      [requestId, '21', JSON.stringify([person]), true],
     )).rows[0];
     await assert.rejects(registerWithProof(youth), /proof image is required/);
     await assert.rejects(registerWithProof({ ...youth, dob: '2024-01-01' }), /before 2024/);
@@ -66,6 +66,18 @@ test('advance cash issues a paid pass without admission; existing large bookings
       [youthBooking.registration_id],
     );
     assert.deepEqual(savedProofs.rows, [{ position: 1, image: proof.toString('hex') }]);
+    await db.query('select fulfill_festival_payment($1,$2,$3)',
+      [youthBooking.registration_id, 'youth-payment-1', youthBooking.amount_paise]);
+
+    const nextBooking = await registerWithProof({ ...participant, first: 'Another student' }, randomUUID());
+    assert.notEqual(nextBooking.registration_id, youthBooking.registration_id);
+    await db.query('select fulfill_festival_payment($1,$2,$3)',
+      [nextBooking.registration_id, 'youth-payment-2', nextBooking.amount_paise]);
+    const separateTickets = await db.query(
+      'select id from festival_tickets where registration_id in ($1, $2)',
+      [youthBooking.registration_id, nextBooking.registration_id],
+    );
+    assert.equal(new Set(separateTickets.rows.map(ticket => ticket.id)).size, 2);
     assert.equal(overview.under16, 44);
     assert.equal((await db.query('select * from festival_admissions')).rows.length,0);
   } finally { await db.close(); }

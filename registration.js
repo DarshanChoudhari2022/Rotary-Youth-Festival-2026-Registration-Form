@@ -89,6 +89,7 @@ async function compressBirthProof(file) {
 
 function addParticipant() {
   const card = template.content.firstElementChild.cloneNode(true);
+  if (cards.children.length > 0) card.querySelector('[name=mobile]').closest('label').remove();
   card.querySelector('.participant-title').textContent = `Participant ${cards.children.length + 1}`;
   for (const input of card.querySelectorAll('input')) {
     const error = document.createElement('span');
@@ -313,7 +314,6 @@ save.addEventListener('click', async () => {
       saveStatus.textContent = result.error || 'Registration could not be saved. Please retry.';
       return;
     }
-    result.needsPayerMobile = !reviewedBooking.participants[0].mobile;
     savedBooking = result;
     renderSaveStatus();
     try {
@@ -323,7 +323,7 @@ save.addEventListener('click', async () => {
       return;
     }
     let destination = '/thank-you.html';
-    if (result.access && result.status === 'pending' && !result.needsPayerMobile) {
+    if (result.access && result.status === 'pending') {
       saveStatus.textContent = 'Opening secure checkout…';
       try {
         const checkout = await fetch('/api/payment', {

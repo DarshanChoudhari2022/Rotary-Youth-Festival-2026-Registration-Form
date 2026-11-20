@@ -92,7 +92,7 @@
     <div class="fields">
       <label>First name * <input name="first" autocomplete="given-name" maxlength="100" placeholder="Enter first name" required></label>
       <label>Last name * <input name="last" autocomplete="family-name" maxlength="100" placeholder="Enter last name" required></label>
-      <label>Mobile number (optional) <span class="phone"><span aria-hidden="true">+91</span><input name="mobile" type="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" title="Enter 10 digits starting with 6, 7, 8 or 9" maxlength="10" placeholder="10-digit mobile number" aria-label="Indian mobile number, optional"></span></label>
+      <label>Booking mobile number * <span class="phone"><span aria-hidden="true">+91</span><input name="mobile" type="tel" autocomplete="tel-national" inputmode="numeric" pattern="[6-9][0-9]{9}" title="Enter 10 digits starting with 6, 7, 8 or 9" maxlength="10" placeholder="10-digit mobile number" required></span><small>Use one mobile number for all tickets in this booking and for online payment.</small></label>
       <label>Email ID * <input name="email" autocomplete="email" type="email" maxlength="254" placeholder="Enter email address" required></label>
       <label>Date of birth * <input name="dob" min="0001-01-01" max="2023-12-31" title="Enter a date of birth before 1 January 2024" autocomplete="bday" type="date" required></label>
       <label class="birth-proof" hidden>Date-of-birth proof *
